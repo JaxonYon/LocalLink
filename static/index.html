@@ -7,6 +7,43 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <script src="https://payment-wrapper.liteapi.travel/dist/liteAPIPayment.js?v=a1"></script>
+    <style>
+        /* Hide Bank and Cash App payment methods */
+        [data-testid="payment-method-bank"] { display: none !important; }
+        [data-testid="payment-method-cashapp"] { display: none !important; }
+        .p-PaymentMethodSelector-item[data-value="us_bank_account"] { display: none !important; }
+        .p-PaymentMethodSelector-item[data-value="cashapp"] { display: none !important; }
+        
+        /* Style the LiteAPI Pay button */
+        .lp-submit-button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+            color: white !important;
+            font-weight: 600 !important;
+            padding: 12px 24px !important;
+            border-radius: 12px !important;
+            border: none !important;
+            cursor: pointer !important;
+            width: 100% !important;
+            font-size: 16px !important;
+            transition: all 0.3s ease !important;
+            box-shadow: 0 4px 6px rgba(102, 126, 234, 0.3) !important;
+        }
+        
+        .lp-submit-button:hover {
+            transform: translateY(-2px) !important;
+            box-shadow: 0 6px 12px rgba(102, 126, 234, 0.4) !important;
+        }
+        
+        .lp-submit-button:active {
+            transform: translateY(0) !important;
+        }
+        
+        .lp-submit-button:disabled {
+            opacity: 0.6 !important;
+            cursor: not-allowed !important;
+        }
+    </style>
 </head>
 <body class="bg-gray-100 min-h-screen">
 <!--  sign in/up -->
@@ -37,6 +74,81 @@
         </div>
     </div>
 
+<!-- Booking Modal -->
+    <div id="booking-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 overflow-y-auto">
+        <div class="bg-white rounded-2xl p-8 max-w-2xl w-full shadow-2xl my-8">
+            <div id="booking-step-1" class="booking-step">
+                <h2 class="text-2xl font-bold text-gray-800 mb-4">Complete Your Booking</h2>
+                <div id="booking-hotel-info" class="mb-6 p-4 bg-gray-50 rounded-lg"></div>
+                
+                <h3 class="text-lg font-bold text-gray-700 mb-3">Guest Information</h3>
+                <div class="grid grid-cols-2 gap-4 mb-6">
+                    <div>
+                        <label class="block text-sm font-bold text-gray-600 mb-1">First Name</label>
+                        <input id="guest-first-name" type="text" class="w-full border p-3 rounded-lg" required>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-bold text-gray-600 mb-1">Last Name</label>
+                        <input id="guest-last-name" type="text" class="w-full border p-3 rounded-lg" required>
+                    </div>
+                    <div class="col-span-2">
+                        <label class="block text-sm font-bold text-gray-600 mb-1">Email</label>
+                        <input id="guest-email" type="email" class="w-full border p-3 rounded-lg" required>
+                    </div>
+                </div>
+                
+                <div id="prebook-loading" class="hidden text-center py-8">
+                    <div class="inline-block animate-spin rounded-full h-12 w-12 border-4 border-purple-600 border-t-transparent mb-4"></div>
+                    <p class="text-gray-600 font-bold">Preparing payment details...</p>
+                    <p class="text-sm text-gray-500 mt-2">This may take a few seconds</p>
+                </div>
+                
+                <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+                    <p class="text-sm text-blue-700">💳 <strong>Test Card:</strong> Use 4242 4242 4242 4242, any CVV, and any future expiration date</p>
+                </div>
+                
+                <div class="flex gap-3">
+                    <button onclick="closeBookingModal()" class="flex-1 border border-gray-300 text-gray-700 py-3 rounded-lg font-bold hover:bg-gray-50 transition">Cancel</button>
+                    <button onclick="proceedToPayment()" class="flex-1 bg-gradient-to-r from-purple-600 to-blue-600 text-white py-3 rounded-lg font-bold hover:from-purple-700 hover:to-blue-700 transition">Proceed to Payment</button>
+                </div>
+            </div>
+            
+            <div id="booking-step-2" class="booking-step hidden">
+                <h2 class="text-2xl font-bold text-gray-800 mb-4">Payment</h2>
+                <div id="booking-summary" class="mb-6 p-4 bg-gray-50 rounded-lg"></div>
+                
+                <div id="payment-sdk-loading" class="hidden text-center py-8 mb-6">
+                    <div class="inline-block animate-spin rounded-full h-10 w-10 border-4 border-purple-600 border-t-transparent mb-3"></div>
+                    <p class="text-gray-600">Loading payment form...</p>
+                </div>
+                
+                <div id="payment-element" class="mb-6"></div>
+                
+                <div id="booking-processing" class="hidden text-center py-8">
+                    <div class="inline-block animate-spin rounded-full h-12 w-12 border-4 border-purple-600 border-t-transparent mb-4"></div>
+                    <p class="text-gray-600 font-bold">Processing your booking...</p>
+                </div>
+                
+                <button onclick="closeBookingModal()" class="w-full border border-gray-300 text-gray-700 py-3 rounded-lg font-bold hover:bg-gray-50 transition">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+<!-- Confirmation Modal -->
+    <div id="confirmation-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-2xl p-8 max-w-lg w-full shadow-2xl">
+            <div class="text-center mb-6">
+                <div class="text-6xl mb-4">✅</div>
+                <h2 class="text-3xl font-bold text-green-600 mb-2">Booking Confirmed!</h2>
+                <p class="text-gray-600">Your hotel reservation has been successfully completed</p>
+            </div>
+            
+            <div id="confirmation-details" class="bg-gray-50 rounded-lg p-6 mb-6 space-y-3"></div>
+            
+            <button onclick="closeConfirmationModal()" class="w-full bg-gradient-to-r from-purple-600 to-blue-600 text-white py-3 rounded-lg font-bold hover:from-purple-700 hover:to-blue-700 transition">Done</button>
+        </div>
+    </div>
+
 <!-- Shared View Banner -->
     <div id="shared-view-banner" class="hidden bg-gradient-to-r from-purple-600 to-blue-600 text-white p-4 text-center">
         <p class="font-bold text-lg">📨 Someone shared this trip with you!</p>
@@ -50,9 +162,10 @@
             <nav id="sidebar-nav" class="space-y-2 flex-1">
                 <button onclick="showPage('planner')" id="btn-planner" class="sidebar-link w-full text-left p-3 rounded-xl flex items-center gap-3 font-medium transition-all">🌍 Plan Trip</button>
                 <button onclick="showPage('saved')" id="btn-saved" class="sidebar-link w-full text-left p-3 rounded-xl flex items-center gap-3 font-medium transition-all">💾 Saved Trips</button>
+                <button onclick="showPage('bookings')" id="btn-bookings" class="sidebar-link w-full text-left p-3 rounded-xl flex items-center gap-3 font-medium transition-all">🏨 My Bookings</button>
                 <button onclick="showPage('profile')" id="btn-profile" class="sidebar-link w-full text-left p-3 rounded-xl flex items-center gap-3 font-medium transition-all">👤 Profile</button>
             </nav>
-            <button onclick="location.reload()" class="mt-auto p-3 text-gray-500 hover:text-red-400 text-sm font-bold transition">Sign Out</button>
+            <button onclick="signOut()" class="mt-auto p-3 text-gray-500 hover:text-red-400 text-sm font-bold transition">Sign Out</button>
         </aside>
 
         <main class="flex-1 overflow-y-auto p-10">
@@ -136,11 +249,37 @@
                     <button onclick="generate()" id="gen-btn" class="w-full bg-blue-600 text-white py-4 rounded-xl font-bold shadow-lg hover:bg-blue-700 transition">Generate Itinerary</button>
                 </div>
                 <div id="itinerary-output" class="mt-10 space-y-6"></div>
+                
+                <!-- Hotel Recommendations Section -->
+                <div id="hotel-section" class="hidden mt-12">
+                    <div class="bg-gradient-to-r from-purple-50 to-blue-50 p-6 rounded-2xl border border-purple-200 mb-6">
+                        <h2 class="text-2xl font-bold text-gray-800 mb-2">🏨 Recommended Hotels</h2>
+                        <p class="text-sm text-gray-600">Handpicked accommodations for your trip. Prices include our 17% service fee.</p>
+                    </div>
+                    <div id="hotels-loading" class="text-center py-12">
+                        <div class="inline-block animate-spin rounded-full h-12 w-12 border-4 border-blue-600 border-t-transparent"></div>
+                        <p class="mt-4 text-gray-600">Finding the best hotels for you...</p>
+                    </div>
+                    <div id="hotels-list" class="space-y-4 hidden"></div>
+                    <div id="hotels-error" class="hidden bg-red-50 border border-red-200 rounded-lg p-4 text-center">
+                        <p class="text-red-600">Unable to load hotel recommendations. Please try again later.</p>
+                    </div>
+                </div>
             </div>
 <!-- Saved Trips -->
             <div id="page-saved" class="page-view hidden max-w-3xl mx-auto">
                 <h1 class="text-3xl font-bold mb-8 text-gray-800">Your Saved Trips</h1>
                 <div id="saved-list" class="space-y-4"></div>
+            </div>
+
+<!-- My Bookings Page -->
+            <div id="page-bookings" class="page-view hidden max-w-3xl mx-auto">
+                <h1 class="text-3xl font-bold mb-8 text-gray-800">My Hotel Bookings</h1>
+                <div id="bookings-loading" class="hidden text-center py-12">
+                    <div class="inline-block animate-spin rounded-full h-12 w-12 border-4 border-purple-600 border-t-transparent mb-4"></div>
+                    <p class="text-gray-600">Loading your bookings...</p>
+                </div>
+                <div id="bookings-list" class="space-y-4"></div>
             </div>
 
         </main>
@@ -149,8 +288,12 @@
     <script>
         let userEmail = null;
         let lastTrip = null;
+        let lastTripDates = null; // Store dates for hotel search
+        let lastTripGroupSize = null; // Store group size
         let hasProfile = false;
         let datePicker = null; // variable init
+        let currentBookingData = null; // Store current booking info
+        let liteAPIPayment = null; // Payment SDK instance
         window.onload = () => {
             // Check if viewing a shared itinerary
             const urlParams = new URLSearchParams(window.location.search);
@@ -160,12 +303,46 @@
                 return; // Don't initialize the rest of the app
             }
             
+            // Restore login FIRST (before handling payment)
+            const savedEmail = localStorage.getItem('userEmail');
+            const payment = urlParams.get('payment');
+            
+            if (savedEmail) {
+                userEmail = savedEmail;
+                document.getElementById('auth-screen').classList.add('hidden');
+                document.getElementById('main-app').classList.remove('hidden');
+                
+                // If returning from payment, handle it after login restore
+                if (payment === 'complete') {
+                    loadProfile().then(() => {
+                        handlePaymentComplete();
+                    });
+                } else {
+                    loadProfile().then(() => {
+                        showPage(hasProfile ? 'planner' : 'profile');
+                    });
+                }
+            } else if (payment === 'complete') {
+                // Payment complete but no saved login - shouldn't happen
+                alert('Session expired. Please login again.');
+                sessionStorage.removeItem('currentBooking');
+            }
+            
+            // Initialize date picker
             datePicker = flatpickr("#t-dates", {
                 mode: "range",
                 dateFormat: "Y-m-d",
                 minDate: "today"
-            }); // init date picker
+            });
         };
+        
+        // Sign out function
+        function signOut() {
+            localStorage.removeItem('userEmail');
+            sessionStorage.clear();
+            location.reload();
+        }
+        
         // AUTH & NAVIGATION
         async function handleAuth(type) {
             const email = document.getElementById('auth-email').value;
@@ -178,6 +355,7 @@
 
             if (res.ok) {
                 userEmail = email;
+                localStorage.setItem('userEmail', email); // Persist login
                 document.getElementById('auth-screen').classList.add('hidden');
                 document.getElementById('main-app').classList.remove('hidden');
                 
@@ -203,7 +381,7 @@
             document.getElementById('page-' + page).classList.remove('hidden');
             
             // Sidebar styling via JS to avoid @apply errors
-            ['planner', 'saved', 'profile'].forEach(p => {
+            ['planner', 'saved', 'bookings', 'profile'].forEach(p => {
                 const btn = document.getElementById('btn-' + p);
                 if (p === page) {
                     btn.classList.add('bg-blue-600', 'text-white', 'shadow-md');
@@ -214,6 +392,7 @@
                 }
             });
             if (page === 'saved') loadSaved();
+            if (page === 'bookings') loadBookings();
         }
 
         // PROFILE LOGIC
@@ -279,7 +458,15 @@
 
             if (res.ok) {
                 lastTrip = await res.json();
+                lastTripDates = {
+                    start: dates[0].toISOString().split('T')[0],
+                    end: dates[1].toISOString().split('T')[0]
+                };
+                lastTripGroupSize = document.getElementById('t-gsize').value || '2';
                 renderTrip(lastTrip, 'itinerary-output', true);
+                
+                // Load hotels after rendering itinerary
+                loadHotels(lastTrip.place_name, lastTripDates.start, lastTripDates.end, lastTripGroupSize);
             } else {
                 const err = await res.json();
                 alert(err.detail || "Error.");
@@ -429,6 +616,400 @@
                     location.href = '/';
                 }
             }
+        }
+
+        // HOTEL SEARCH FUNCTIONS
+        async function loadHotels(destination, checkIn, checkOut, groupSize) {
+            const hotelSection = document.getElementById('hotel-section');
+            const hotelsLoading = document.getElementById('hotels-loading');
+            const hotelsList = document.getElementById('hotels-list');
+            const hotelsError = document.getElementById('hotels-error');
+            
+            // Show hotel section
+            hotelSection.classList.remove('hidden');
+            hotelsLoading.classList.remove('hidden');
+            hotelsList.classList.add('hidden');
+            hotelsError.classList.add('hidden');
+            
+            try {
+                const guests = parseInt(groupSize) || 2;
+                const res = await fetch('/api/search-hotels', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        destination: destination,
+                        check_in: checkIn,
+                        check_out: checkOut,
+                        guests: guests
+                    })
+                });
+                
+                if (res.ok) {
+                    const data = await res.json();
+                    hotelsLoading.classList.add('hidden');
+                    
+                    if (data.hotels && data.hotels.length > 0) {
+                        renderHotels(data.hotels);
+                        hotelsList.classList.remove('hidden');
+                    } else {
+                        hotelsError.querySelector('p').innerText = 'No hotels found for this destination.';
+                        hotelsError.classList.remove('hidden');
+                    }
+                } else {
+                    throw new Error('Failed to fetch hotels');
+                }
+            } catch (error) {
+                console.error('Error loading hotels:', error);
+                hotelsLoading.classList.add('hidden');
+                hotelsError.classList.remove('hidden');
+            }
+        }
+        
+        function renderHotels(hotels) {
+            const container = document.getElementById('hotels-list');
+            container.innerHTML = '';
+            
+            hotels.forEach(hotel => {
+                const hotelCard = createHotelCard(hotel);
+                container.appendChild(hotelCard);
+            });
+        }
+        
+        function createHotelCard(hotel) {
+            const card = document.createElement('div');
+            card.className = 'bg-white rounded-2xl shadow-sm border overflow-hidden hover:shadow-lg transition-shadow';
+            
+            const stars = hotel.stars ? '★'.repeat(hotel.stars) : '';
+            const mainImage = (hotel.images && hotel.images.length > 0) 
+                ? hotel.images[0] 
+                : 'https://via.placeholder.com/400x250?text=No+Image';
+            
+            const amenitiesDisplay = hotel.amenities && hotel.amenities.length > 0
+                ? hotel.amenities.slice(0, 4).map(a => `<span class="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded-full">${a}</span>`).join('')
+                : '';
+            
+            const remainingAmenities = hotel.amenities && hotel.amenities.length > 4
+                ? `<span class="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded-full">+${hotel.amenities.length - 4} more</span>`
+                : '';
+            
+            card.innerHTML = `
+                <div class="flex flex-col md:flex-row">
+                    <div class="md:w-1/3">
+                        <img src="${mainImage}" alt="${hotel.name}" 
+                             class="w-full h-48 md:h-full object-cover"
+                             onerror="this.src='https://via.placeholder.com/400x250?text=No+Image'">
+                    </div>
+                    <div class="flex-1 p-6">
+                        <div class="flex justify-between items-start mb-3">
+                            <div>
+                                <h3 class="text-xl font-bold text-gray-900">${hotel.name}</h3>
+                                ${stars ? `<div class="text-yellow-500 text-sm">${stars}</div>` : ''}
+                            </div>
+                            <div class="text-right">
+                                <div class="text-3xl font-bold text-purple-600">$${hotel.price_per_night.toFixed(2)}</div>
+                                <div class="text-sm text-gray-500">per night</div>
+                            </div>
+                        </div>
+                        
+                        <p class="text-sm text-gray-600 mb-3 flex items-start gap-1">
+                            <span class="text-gray-400">📍</span>
+                            ${hotel.address}
+                        </p>
+                        
+                        ${hotel.description ? `<p class="text-sm text-gray-700 mb-4 line-clamp-2">${hotel.description}</p>` : ''}
+                        
+                        ${amenitiesDisplay || remainingAmenities ? `
+                            <div class="flex flex-wrap gap-2 mb-4">
+                                ${amenitiesDisplay}
+                                ${remainingAmenities}
+                            </div>
+                        ` : ''}
+                        
+                        <button onclick="startBooking(${JSON.stringify(hotel).replace(/"/g, '&quot;')})" 
+                                class="w-full bg-gradient-to-r from-purple-600 to-blue-600 text-white py-3 px-4 rounded-lg font-bold hover:from-purple-700 hover:to-blue-700 transition-all">
+                            View Details & Book
+                        </button>
+                    </div>
+                </div>
+            `;
+            
+            return card;
+        }
+        
+        // BOOKING FUNCTIONS
+        function startBooking(hotel) {
+            currentBookingData = {hotel, offerId: null, prebookData: null};
+            
+            // Store in sessionStorage for when user returns from payment
+            sessionStorage.setItem('currentBooking', JSON.stringify(currentBookingData));
+            
+            // Pre-fill guest info from profile
+            const nameField = document.getElementById('u-name').value || '';
+            const nameParts = nameField.split(' ');
+            document.getElementById('guest-first-name').value = nameParts[0] || '';
+            document.getElementById('guest-last-name').value = nameParts.slice(1).join(' ') || '';
+            document.getElementById('guest-email').value = userEmail || '';
+            
+            // Show hotel info
+            const hotelInfo = document.getElementById('booking-hotel-info');
+            hotelInfo.innerHTML = `
+                <h3 class="font-bold text-lg text-gray-800">${hotel.name}</h3>
+                <p class="text-sm text-gray-600">${hotel.address}</p>
+                <div class="flex justify-between items-center mt-3">
+                    <span class="text-gray-700">Check-in: ${hotel.check_in}</span>
+                    <span class="text-gray-700">Check-out: ${hotel.check_out}</span>
+                </div>
+                <div class="text-2xl font-bold text-purple-600 mt-2">$${hotel.price_per_night.toFixed(2)}/night</div>
+            `;
+            
+            // Show modal
+            document.getElementById('booking-modal').classList.remove('hidden');
+            document.getElementById('booking-step-1').classList.remove('hidden');
+            document.getElementById('booking-step-2').classList.add('hidden');
+        }
+        
+        function closeBookingModal() {
+            document.getElementById('booking-modal').classList.add('hidden');
+            currentBookingData = null;
+        }
+        
+        async function proceedToPayment() {
+            // Validate form
+            const firstName = document.getElementById('guest-first-name').value.trim();
+            const lastName = document.getElementById('guest-last-name').value.trim();
+            const email = document.getElementById('guest-email').value.trim();
+            
+            if (!firstName || !lastName || !email) {
+                alert('Please fill in all guest information');
+                return;
+            }
+            
+            // Show loading indicator
+            document.getElementById('prebook-loading').classList.remove('hidden');
+            
+            currentBookingData.guestInfo = {firstName, lastName, email};
+            
+            // Save to sessionStorage
+            sessionStorage.setItem('currentBooking', JSON.stringify(currentBookingData));
+            
+            // Hide step 1, show step 2
+            document.getElementById('booking-step-1').classList.add('hidden');
+            document.getElementById('booking-step-2').classList.remove('hidden');
+            
+            // Show summary
+            const summary = document.getElementById('booking-summary');
+            summary.innerHTML = `
+                <h3 class="font-bold text-gray-800">${currentBookingData.hotel.name}</h3>
+                <p class="text-sm text-gray-600">${currentBookingData.hotel.check_in} to ${currentBookingData.hotel.check_out}</p>
+                <p class="text-sm text-gray-600 mt-2">Guest: ${firstName} ${lastName}</p>
+                <div class="text-2xl font-bold text-purple-600 mt-3">Total: $${currentBookingData.hotel.price_per_night.toFixed(2)}</div>
+            `;
+            
+            // Prebook to get payment details
+            await initializePayment();
+        }
+        
+        async function initializePayment() {
+            try {
+                // Show payment SDK loading
+                document.getElementById('payment-sdk-loading').classList.remove('hidden');
+                
+                // Prebook to get payment details
+                const res = await fetch('/api/hotels/prebook', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({offer_id: currentBookingData.hotel.offer_id})
+                });
+                
+                if (!res.ok) {
+                    throw new Error('Prebook failed');
+                }
+                
+                const prebookData = await res.json();
+                currentBookingData.prebookData = prebookData;
+                
+                // Save updated data to sessionStorage
+                sessionStorage.setItem('currentBooking', JSON.stringify(currentBookingData));
+                
+                // Initialize LiteAPI Payment SDK
+                const liteAPIConfig = {
+                    publicKey: 'sandbox',
+                    secretKey: prebookData.secretKey,
+                    returnUrl: window.location.origin + '/?payment=complete&prebookId=' + prebookData.prebookId + '&transactionId=' + prebookData.transactionId,
+                    targetElement: '#payment-element',
+                    appearance: {theme: 'flat'},
+                    options: {business: {name: 'LocalLink'}}
+                };
+                
+                liteAPIPayment = new LiteAPIPayment(liteAPIConfig);
+                liteAPIPayment.handlePayment();
+                
+                // Hide loading indicators
+                document.getElementById('prebook-loading').classList.add('hidden');
+                document.getElementById('payment-sdk-loading').classList.add('hidden');
+                
+            } catch (error) {
+                console.error('Payment initialization error:', error);
+                document.getElementById('prebook-loading').classList.add('hidden');
+                document.getElementById('payment-sdk-loading').classList.add('hidden');
+                alert('Error initializing payment. Please try again.');
+            }
+        }
+        
+        function handlePaymentComplete(event) {
+            // Check if payment was successful
+            const urlParams = new URLSearchParams(window.location.search);
+            const payment = urlParams.get('payment');
+            const prebookId = urlParams.get('prebookId');
+            const transactionId = urlParams.get('transactionId');
+            
+            if (payment === 'complete' && prebookId && transactionId) {
+                // Restore booking data from sessionStorage
+                const storedData = sessionStorage.getItem('currentBooking');
+                if (!storedData) {
+                    alert('Booking data lost. Please try again.');
+                    return;
+                }
+                currentBookingData = JSON.parse(storedData);
+                
+                // Complete the booking
+                completeBooking(transactionId);
+                
+                // Clean up URL
+                window.history.replaceState({}, document.title, window.location.pathname);
+            }
+        }
+        
+        async function completeBooking(transactionId) {
+            try {
+                console.log('Starting booking completion...', {transactionId, userEmail});
+                document.getElementById('booking-processing').classList.remove('hidden');
+                
+                const bookingRes = await fetch('/api/hotels/book', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        prebook_id: currentBookingData.prebookData.prebookId,
+                        transaction_id: transactionId,
+                        holder_first_name: currentBookingData.guestInfo.firstName,
+                        holder_last_name: currentBookingData.guestInfo.lastName,
+                        holder_email: currentBookingData.guestInfo.email,
+                        guest_first_name: currentBookingData.guestInfo.firstName,
+                        guest_last_name: currentBookingData.guestInfo.lastName,
+                        guest_email: currentBookingData.guestInfo.email
+                    })
+                });
+                
+                if (!bookingRes.ok) {
+                    const errorText = await bookingRes.text();
+                    console.error('Booking API error:', errorText);
+                    throw new Error('Booking failed: ' + errorText);
+                }
+                
+                const bookingData = await bookingRes.json();
+                console.log('Booking successful:', bookingData);
+                
+                // Save to database
+                const saveRes = await fetch('/api/bookings/save', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        email: userEmail,
+                        booking_id: bookingData.bookingId,
+                        hotel_name: currentBookingData.hotel.name,
+                        check_in: currentBookingData.hotel.check_in,
+                        check_out: currentBookingData.hotel.check_out,
+                        total_price: currentBookingData.hotel.price_per_night,
+                        hotel_confirmation_code: bookingData.hotelConfirmationCode
+                    })
+                });
+                
+                if (!saveRes.ok) {
+                    console.error('Save booking error');
+                }
+                
+                console.log('Showing confirmation...');
+                // Show confirmation
+                showConfirmation(bookingData);
+                closeBookingModal();
+                
+                // Clear stored booking data
+                sessionStorage.removeItem('currentBooking');
+                
+            } catch (error) {
+                console.error('Booking error:', error);
+                alert('Error completing booking: ' + error.message);
+            } finally {
+                document.getElementById('booking-processing').classList.add('hidden');
+            }
+        }
+        
+        function showConfirmation(bookingData) {
+            const details = document.getElementById('confirmation-details');
+            details.innerHTML = `
+                <div class="flex justify-between">
+                    <span class="text-gray-600">Booking ID:</span>
+                    <span class="font-bold">${bookingData.bookingId}</span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-gray-600">Confirmation Code:</span>
+                    <span class="font-bold">${bookingData.hotelConfirmationCode}</span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-gray-600">Hotel:</span>
+                    <span class="font-bold">${currentBookingData.hotel.name}</span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-gray-600">Check-in:</span>
+                    <span class="font-bold">${currentBookingData.hotel.check_in}</span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-gray-600">Check-out:</span>
+                    <span class="font-bold">${currentBookingData.hotel.check_out}</span>
+                </div>
+            `;
+            document.getElementById('confirmation-modal').classList.remove('hidden');
+        }
+        
+        function closeConfirmationModal() {
+            document.getElementById('confirmation-modal').classList.add('hidden');
+        }
+        
+        async function loadBookings() {
+            const loadingEl = document.getElementById('bookings-loading');
+            const container = document.getElementById('bookings-list');
+            
+            loadingEl.classList.remove('hidden');
+            container.classList.add('hidden');
+            
+            const res = await fetch(`/api/bookings?email=${userEmail}`);
+            const bookings = await res.json();
+            
+            loadingEl.classList.add('hidden');
+            container.classList.remove('hidden');
+            
+            if (bookings.length === 0) {
+                container.innerHTML = '<p class="text-gray-400 italic text-center py-10">No bookings yet.</p>';
+                return;
+            }
+            
+            container.innerHTML = bookings.map(b => `
+                <div class="bg-white p-6 rounded-2xl shadow-sm border hover:shadow-md transition-shadow">
+                    <div class="flex justify-between items-start">
+                        <div class="flex-1">
+                            <h3 class="text-xl font-bold text-gray-800 mb-2">${b.hotel_name}</h3>
+                            <div class="space-y-1 text-sm text-gray-600">
+                                <p>📅 ${b.check_in} to ${b.check_out}</p>
+                                <p>💰 Total: $${b.total_price}</p>
+                                <p>📋 Status: <span class="font-bold text-green-600">${b.status}</span></p>
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            <span class="inline-block px-3 py-1 bg-green-100 text-green-800 text-xs font-bold rounded-full">Confirmed</span>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
         }
     </script>
 </body>

@@ -12,6 +12,7 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, relationship, Session
 from google import genai
 from dotenv import load_dotenv
+from services.liteapi_service import liteapi_service
 
 load_dotenv()
 
@@ -45,6 +46,20 @@ class SharedItineraryDB(Base):
     id = Column(Integer, primary_key=True, index=True)
     share_id = Column(String, unique=True, index=True)
     content = Column(Text)
+    created_at = Column(String)
+
+#hotel bookings (for future use)
+class HotelBookingDB(Base):
+    __tablename__ = "hotel_bookings"
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"))
+    itinerary_id = Column(Integer, ForeignKey("itineraries.id"))
+    hotel_id = Column(String)
+    hotel_name = Column(String)
+    check_in = Column(String)
+    check_out = Column(String)
+    total_price = Column(String)
+    booking_status = Column(String)
     created_at = Column(String)
 
 Base.metadata.create_all(bind=engine)
@@ -101,6 +116,54 @@ class SaveTripRequest(BaseModel):
 
 class ShareTripRequest(BaseModel):
     itinerary: Trip
+
+class HotelSearchRequest(BaseModel):
+    destination: str
+    check_in: str
+    check_out: str
+    guests: int = 2
+
+class Hotel(BaseModel):
+    id: str
+    name: str
+    stars: Optional[float] = None
+    address: str
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
+    images: List[str] = []
+    description: str = ""
+    amenities: List[str] = []
+    price_per_night: float
+    currency: str = "USD"
+    check_in: str
+    check_out: str
+    offer_id: str = ""
+
+class HotelSearchResponse(BaseModel):
+    hotels: List[Hotel]
+    count: int
+
+class PrebookRequest(BaseModel):
+    offer_id: str
+
+class BookRequest(BaseModel):
+    prebook_id: str
+    transaction_id: str
+    holder_first_name: str
+    holder_last_name: str
+    holder_email: str
+    guest_first_name: str
+    guest_last_name: str
+    guest_email: str
+
+class SaveBookingRequest(BaseModel):
+    email: str
+    booking_id: str
+    hotel_name: str
+    check_in: str
+    check_out: str
+    total_price: float
+    hotel_confirmation_code: str
 
 # --- APP SETUP ---
 app = FastAPI()
@@ -213,5 +276,110 @@ def get_shared_itinerary(share_id: str):
     
     db.close()
     return json.loads(shared.content)
+
+@app.post("/api/search-hotels")
+def search_hotels(req: HotelSearchRequest):
+    """Search for hotels based on destination and dates"""
+    try:
+        hotels = liteapi_service.search_hotels(
+            city_name=req.destination,
+            check_in=req.check_in,
+            check_out=req.check_out,
+            guests=req.guests,
+            limit=5
+        )
+        return HotelSearchResponse(hotels=hotels, count=len(hotels))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/hotels/{hotel_id}")
+def get_hotel_details(hotel_id: str):
+    """Get detailed information about a specific hotel"""
+    try:
+        hotel = liteapi_service.get_hotel_details(hotel_id)
+        if not hotel:
+            raise HTTPException(status_code=404, detail="Hotel not found")
+        return hotel
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/hotels/prebook")
+def prebook_hotel(req: PrebookRequest):
+    """Prebook a hotel rate"""
+    try:
+        prebook_data = liteapi_service.prebook(req.offer_id)
+        if not prebook_data:
+            raise HTTPException(status_code=400, detail="Prebook failed")
+        return prebook_data
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/hotels/book")
+def book_hotel(req: BookRequest):
+    """Book a hotel room after payment"""
+    try:
+        booking_data = liteapi_service.book(
+            prebook_id=req.prebook_id,
+            transaction_id=req.transaction_id,
+            holder_first_name=req.holder_first_name,
+            holder_last_name=req.holder_last_name,
+            holder_email=req.holder_email,
+            guest_first_name=req.guest_first_name,
+            guest_last_name=req.guest_last_name,
+            guest_email=req.guest_email
+        )
+        if not booking_data:
+            raise HTTPException(status_code=400, detail="Booking failed")
+        return booking_data
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/bookings/save")
+def save_booking(req: SaveBookingRequest):
+    """Save booking to user's history"""
+    db = SessionLocal()
+    try:
+        user = db.query(UserDB).filter(UserDB.email == req.email).first()
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
+        
+        new_booking = HotelBookingDB(
+            user_id=user.id,
+            hotel_id=req.booking_id,
+            hotel_name=req.hotel_name,
+            check_in=req.check_in,
+            check_out=req.check_out,
+            total_price=str(req.total_price),
+            booking_status="CONFIRMED",
+            created_at=datetime.now().isoformat()
+        )
+        db.add(new_booking)
+        db.commit()
+        return {"message": "Booking saved"}
+    finally:
+        db.close()
+
+@app.get("/api/bookings")
+def get_bookings(email: str):
+    """Get user's booking history"""
+    db = SessionLocal()
+    try:
+        user = db.query(UserDB).filter(UserDB.email == email).first()
+        if not user:
+            return []
+        
+        bookings = db.query(HotelBookingDB).filter(HotelBookingDB.user_id == user.id).all()
+        return [{
+            "id": b.id,
+            "booking_id": b.hotel_id,
+            "hotel_name": b.hotel_name,
+            "check_in": b.check_in,
+            "check_out": b.check_out,
+            "total_price": b.total_price,
+            "status": b.booking_status,
+            "created_at": b.created_at
+        } for b in bookings]
+    finally:
+        db.close()
 
 app.mount("/", StaticFiles(directory="static", html=True), name="static")
