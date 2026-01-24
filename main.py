@@ -1,6 +1,8 @@
 import os
 import bcrypt
 import json
+import uuid
+from datetime import datetime, timedelta
 from typing import List, Optional
 from fastapi import FastAPI, HTTPException, Depends
 from fastapi.staticfiles import StaticFiles
@@ -37,6 +39,14 @@ class ItineraryDB(Base):
     content = Column(Text) 
     owner = relationship("UserDB", back_populates="itineraries")
 
+#shared itineraries
+class SharedItineraryDB(Base):
+    __tablename__ = "shared_itineraries"
+    id = Column(Integer, primary_key=True, index=True)
+    share_id = Column(String, unique=True, index=True)
+    content = Column(Text)
+    created_at = Column(String)
+
 Base.metadata.create_all(bind=engine)
 
 # --- SECURITY ---
@@ -60,8 +70,10 @@ class ProfileUpdate(BaseModel):
 class Activity(BaseModel):
     name: str
     location: str
+    location_coordinates: str
     description: str
     time_to_complete_hours: int
+    
 
 class Day(BaseModel):
     day_name: str
@@ -85,6 +97,9 @@ class TripRequest(BaseModel):
 
 class SaveTripRequest(BaseModel):
     email: str
+    itinerary: Trip
+
+class ShareTripRequest(BaseModel):
     itinerary: Trip
 
 # --- APP SETUP ---
@@ -141,7 +156,7 @@ async def generate_itinerary(req: TripRequest):
     interests = ", ".join(req.interested_activities)
     travellingwith = ", ".join(req.traveling_with)
     transportationoptions = ", ".join(req.transportation_options)
-    prompt = f"<prompt> You are an Expert travel planner plan a trip for the user with their data </prompt>. <userdata> User: {user.name}, {user.age}yo {user.gender}. Trip: {req.place}, from {req.start_date} to {req.end_date}. Budget: {req.activity_budget}, Travelling with: {travellingwith}, Group Size of {req.group_size} Transportation options: {transportationoptions}Vibe: {req.travel_vibe}, Interests: {interests}. </userdata> Format: JSON."
+    prompt = f"<prompt> You are an Expert travel planner plan a trip for the user with their data. For each activity, provide the exact location address AND location_coordinates in 'latitude,longitude' format (e.g., '40.7128,-74.0060'). </prompt>. <userdata> User: {user.name}, {user.age}yo {user.gender}. Trip: {req.place}, from {req.start_date} to {req.end_date}. Budget: {req.activity_budget}, Travelling with: {travellingwith}, Group Size of {req.group_size} Transportation options: {transportationoptions}Vibe: {req.travel_vibe}, Interests: {interests}. </userdata> Format: JSON."
     
     try:
         response = client.models.generate_content(
@@ -170,5 +185,33 @@ def get_itineraries(email: str):
     user = db.query(UserDB).filter(UserDB.email == email).first()
     trips = db.query(ItineraryDB).filter(ItineraryDB.user_id == user.id).all() if user else []
     return [{"id": t.id, "place": t.place_name, "data": json.loads(t.content)} for t in trips]
+
+@app.post("/share-itinerary")
+def share_itinerary(req: ShareTripRequest):
+    db = SessionLocal()
+    share_id = str(uuid.uuid4())
+    created_at = datetime.now().isoformat()
+    new_share = SharedItineraryDB(share_id=share_id, content=req.itinerary.model_dump_json(), created_at=created_at)
+    db.add(new_share)
+    db.commit()
+    db.close()
+    return {"share_id": share_id}
+
+@app.get("/shared/{share_id}")
+def get_shared_itinerary(share_id: str):
+    db = SessionLocal()
+    shared = db.query(SharedItineraryDB).filter(SharedItineraryDB.share_id == share_id).first()
+    if not shared:
+        db.close()
+        raise HTTPException(status_code=404, detail="Trip not found")
+    
+    # Check if expired (30 days)
+    created = datetime.fromisoformat(shared.created_at)
+    if datetime.now() - created > timedelta(days=30):
+        db.close()
+        raise HTTPException(status_code=410, detail="This trip link has expired (30 days)")
+    
+    db.close()
+    return json.loads(shared.content)
 
 app.mount("/", StaticFiles(directory="static", html=True), name="static")
