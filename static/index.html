@@ -973,6 +973,8 @@
         
         function closeConfirmationModal() {
             document.getElementById('confirmation-modal').classList.add('hidden');
+            showPage('bookings');
+            loadBookings();
         }
         
         async function loadBookings() {
