@@ -1,5 +1,5 @@
-import { ProtectedRoute } from '@/app/guards';
-import { AppLayout, AuthLayout } from '@/components/layout';
+import { ProtectedRoute } from '@/app';
+import { AppLayout, AuthLayout } from '@/components';
 import { Account, AuthResetPassword, AuthSignIn, AuthSignUp, Discover, Home, Itinerary, NotFound, Onboarding, Saved } from '@/pages';
 import { createBrowserRouter } from 'react-router-dom';
 
