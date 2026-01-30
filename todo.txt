@@ -1,4 +1,0 @@
-change time to schedule
-password reqs
-email verification
-location information

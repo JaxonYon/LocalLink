@@ -1,17 +1,19 @@
-import os
-import bcrypt
 import json
+import os
 import uuid
 from datetime import datetime, timedelta
 from typing import List, Optional
-from fastapi import FastAPI, HTTPException, Depends
-from fastapi.staticfiles import StaticFiles
-from pydantic import BaseModel, Field
-from sqlalchemy import Column, Integer, String, Text, ForeignKey, create_engine
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker, relationship, Session
-from google import genai
+
+import bcrypt
 from dotenv import load_dotenv
+from fastapi import Depends, FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from google import genai
+from pydantic import BaseModel, Field
+from sqlalchemy import Column, ForeignKey, Integer, String, Text, create_engine
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import Session, relationship, sessionmaker
 
 load_dotenv()
 
@@ -20,7 +22,9 @@ DATABASE_URL = "sqlite:///./locallink.db"
 engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
-#userdata 
+
+
+# userdata
 class UserDB(Base):
     __tablename__ = "users"
     id = Column(Integer, primary_key=True, index=True)
@@ -30,16 +34,20 @@ class UserDB(Base):
     age = Column(Integer, nullable=True)
     gender = Column(String, nullable=True)
     itineraries = relationship("ItineraryDB", back_populates="owner")
-#saved itineraries
+# saved itineraries
+
+
 class ItineraryDB(Base):
     __tablename__ = "itineraries"
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id"))
     place_name = Column(String)
-    content = Column(Text) 
+    content = Column(Text)
     owner = relationship("UserDB", back_populates="itineraries")
 
-#shared itineraries
+# shared itineraries
+
+
 class SharedItineraryDB(Base):
     __tablename__ = "shared_itineraries"
     id = Column(Integer, primary_key=True, index=True)
@@ -47,19 +55,26 @@ class SharedItineraryDB(Base):
     content = Column(Text)
     created_at = Column(String)
 
+
 Base.metadata.create_all(bind=engine)
 
 # --- SECURITY ---
+
+
 def get_password_hash(password: str):
     return bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+
 
 def verify_password(plain_password: str, hashed_password: str):
     return bcrypt.checkpw(plain_password.encode('utf-8'), hashed_password.encode('utf-8'))
 
 # --- SCHEMAS ---
+
+
 class UserAuth(BaseModel):
     email: str
     password: str
+
 
 class ProfileUpdate(BaseModel):
     email: str
@@ -67,27 +82,30 @@ class ProfileUpdate(BaseModel):
     age: int
     gender: str
 
+
 class Activity(BaseModel):
     name: str
     location: str
     location_coordinates: str
     description: str
     time_to_complete_hours: int
-    
+
 
 class Day(BaseModel):
     day_name: str
     activities: List[Activity]
 
+
 class Trip(BaseModel):
     place_name: str
     days: List[Day]
 
+
 class TripRequest(BaseModel):
     email: str
     place: str
-    start_date: str 
-    end_date: str   
+    start_date: str
+    end_date: str
     activity_budget: str
     travel_vibe: str
     interested_activities: List[str]
@@ -95,19 +113,41 @@ class TripRequest(BaseModel):
     group_size: str
     transportation_options: List[str]
 
+
 class SaveTripRequest(BaseModel):
     email: str
     itinerary: Trip
 
+
 class ShareTripRequest(BaseModel):
     itinerary: Trip
 
+
 # --- APP SETUP ---
 app = FastAPI()
-client = genai.Client(api_key=os.getenv("GEMINI_API_KEY")) #Gemini SET UP
+client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))  # Gemini SET UP
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:5173"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 
 # --- ENDPOINTS ---
-#Create account
+@app.get("/health")
+def health_check():
+    return {
+        "status": "ok",
+        "service": "locallink-backend",
+        "timestamp": datetime.utcnow().isoformat()
+    }
+
+# Create account
+
+
 @app.post("/signup")
 def signup(user: UserAuth):
     db = SessionLocal()
@@ -120,7 +160,9 @@ def signup(user: UserAuth):
     db.commit()
     db.close()
     return {"message": "User created", "email": user.email}
-#logging in
+# logging in
+
+
 @app.post("/login")
 def login(user: UserAuth):
     db = SessionLocal()
@@ -129,13 +171,17 @@ def login(user: UserAuth):
         db.close()
         raise HTTPException(status_code=400, detail="Invalid credentials")
     return {"email": db_user.email, "name": db_user.name}
-#get user data
+# get user data
+
+
 @app.get("/get-profile")
 def get_profile(email: str):
     db = SessionLocal()
     user = db.query(UserDB).filter(UserDB.email == email).first()
     return {"name": user.name, "age": user.age, "gender": user.gender} if user else {}
-#update user data
+# update user data
+
+
 @app.post("/save-profile")
 def save_profile(profile: ProfileUpdate):
     db = SessionLocal()
@@ -145,28 +191,31 @@ def save_profile(profile: ProfileUpdate):
         db.commit()
     db.close()
     return {"message": "Saved"}
-#Create itinerary
+# Create itinerary
+
+
 @app.post("/generate-itinerary")
 async def generate_itinerary(req: TripRequest):
     db = SessionLocal()
     user = db.query(UserDB).filter(UserDB.email == req.email).first()
     if not user or not user.name:
-        raise HTTPException(status_code=400, detail="Complete profile first") 
+        raise HTTPException(status_code=400, detail="Complete profile first")
 
     interests = ", ".join(req.interested_activities)
     travellingwith = ", ".join(req.traveling_with)
     transportationoptions = ", ".join(req.transportation_options)
     prompt = f"<prompt> You are an Expert travel planner plan a trip for the user with their data. For each activity, provide the exact location address AND location_coordinates in 'latitude,longitude' format (e.g., '40.7128,-74.0060'). </prompt>. <userdata> User: {user.name}, {user.age}yo {user.gender}. Trip: {req.place}, from {req.start_date} to {req.end_date}. Budget: {req.activity_budget}, Travelling with: {travellingwith}, Group Size of {req.group_size} Transportation options: {transportationoptions}Vibe: {req.travel_vibe}, Interests: {interests}. </userdata> Format: JSON."
-    
+
     try:
         response = client.models.generate_content(
-            model="gemini-2.5-flash", 
+            model="gemini-2.5-flash",
             contents=prompt,
             config={"response_mime_type": "application/json", "response_json_schema": Trip.model_json_schema()},
         )
         return response.parsed
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
 
 @app.post("/save-itinerary")
 def save_itinerary(req: SaveTripRequest):
@@ -179,12 +228,14 @@ def save_itinerary(req: SaveTripRequest):
     db.close()
     return {"message": "Saved"}
 
+
 @app.get("/get-itineraries")
 def get_itineraries(email: str):
     db = SessionLocal()
     user = db.query(UserDB).filter(UserDB.email == email).first()
     trips = db.query(ItineraryDB).filter(ItineraryDB.user_id == user.id).all() if user else []
     return [{"id": t.id, "place": t.place_name, "data": json.loads(t.content)} for t in trips]
+
 
 @app.post("/share-itinerary")
 def share_itinerary(req: ShareTripRequest):
@@ -197,6 +248,7 @@ def share_itinerary(req: ShareTripRequest):
     db.close()
     return {"share_id": share_id}
 
+
 @app.get("/shared/{share_id}")
 def get_shared_itinerary(share_id: str):
     db = SessionLocal()
@@ -204,14 +256,15 @@ def get_shared_itinerary(share_id: str):
     if not shared:
         db.close()
         raise HTTPException(status_code=404, detail="Trip not found")
-    
+
     # Check if expired (30 days)
     created = datetime.fromisoformat(shared.created_at)
     if datetime.now() - created > timedelta(days=30):
         db.close()
         raise HTTPException(status_code=410, detail="This trip link has expired (30 days)")
-    
+
     db.close()
     return json.loads(shared.content)
+
 
 app.mount("/", StaticFiles(directory="static", html=True), name="static")

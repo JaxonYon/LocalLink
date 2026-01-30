@@ -1,6 +1,0 @@
-fastapi
-uvicorn
-google-genai
-sqlalchemy
-bcrypt
-python-dotenv
