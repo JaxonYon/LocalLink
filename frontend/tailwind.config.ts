@@ -17,6 +17,15 @@ const config: Config = {
 					800: '#1A454E',
 					900: '#102D33',
 				},
+				orange: {
+					light: '#ff914d',
+					dark: '#fe751f',
+				},
+				teal: {
+					light: '#44c0c5',
+					medium: '#0097b2',
+					dark: '#0d6980',
+				},
 				surface: {
 					DEFAULT: '#FFFFFF',
 					subtle: '#F7F8FA',
@@ -35,7 +44,7 @@ const config: Config = {
 				muted: '#F1F5F9',
 			},
 			fontFamily: {
-				sans: ['"IBM Plex Sans"', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+				// sans: ['"IBM Plex Sans"', 'ui-sans-serif', 'system-ui', 'sans-serif'],
 			},
 			boxShadow: {
 				subtle: '0 1px 2px rgba(15, 23, 42, 0.06)',
