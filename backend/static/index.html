@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LocalLink Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+</head>
+<body class="bg-gray-100 min-h-screen">
+<!--  sign in/up -->
+    <div id="auth-screen" class="flex items-center justify-center min-h-screen p-4">
+        <div class="max-w-md w-full p-8 bg-white rounded-2xl shadow-xl border">
+            <h1 class="text-3xl font-black text-blue-600 mb-6">LocalLink</h1>
+            <div class="space-y-4">
+                <input id="auth-email" type="email" placeholder="Email" class="w-full border p-3 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none">
+                <input id="auth-pass" type="password" placeholder="Password" class="w-full border p-3 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none">
+                <div class="flex gap-4 pt-2">
+                    <button onclick="handleAuth('login')" class="flex-1 bg-blue-600 text-white py-3 rounded-xl font-bold hover:bg-blue-700 transition">Login</button>
+                    <button onclick="handleAuth('signup')" class="flex-1 border border-blue-600 text-blue-600 py-3 rounded-xl font-bold hover:bg-blue-50 transition">Sign Up</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+<!-- Share Modal -->
+    <div id="share-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-2xl p-8 max-w-md w-full shadow-2xl">
+            <h2 class="text-2xl font-bold text-gray-800 mb-4">Share Your Trip! 🎉</h2>
+            <p class="text-sm text-gray-600 mb-4">Anyone with this link can view your itinerary. Link expires in 30 days.</p>
+            <div class="flex gap-2 mb-4">
+                <input id="share-link-input" type="text" readonly class="flex-1 border p-3 rounded-lg bg-gray-50 text-sm">
+                <button onclick="copyShareLink()" class="bg-blue-600 text-white px-6 py-3 rounded-lg font-bold hover:bg-blue-700 transition">Copy</button>
+            </div>
+            <button onclick="closeShareModal()" class="w-full border border-gray-300 text-gray-700 py-3 rounded-lg font-bold hover:bg-gray-50 transition">Close</button>
+        </div>
+    </div>
+
+<!-- Shared View Banner -->
+    <div id="shared-view-banner" class="hidden bg-gradient-to-r from-purple-600 to-blue-600 text-white p-4 text-center">
+        <p class="font-bold text-lg">📨 Someone shared this trip with you!</p>
+        <p class="text-sm opacity-90">Viewing a shared itinerary - <button onclick="promptSaveCopy()" class="underline hover:opacity-80">Save a copy to your account</button></p>
+    </div>
+
+<!-- Main/Nav Buttons -->
+    <div id="main-app" class="hidden flex h-screen overflow-hidden">
+        <aside class="w-64 bg-gray-900 text-white flex flex-col p-6 shadow-2xl">
+            <h2 class="text-2xl font-black text-blue-400 mb-10 tracking-tight">LocalLink</h2>
+            <nav id="sidebar-nav" class="space-y-2 flex-1">
+                <button onclick="showPage('planner')" id="btn-planner" class="sidebar-link w-full text-left p-3 rounded-xl flex items-center gap-3 font-medium transition-all">🌍 Plan Trip</button>
+                <button onclick="showPage('saved')" id="btn-saved" class="sidebar-link w-full text-left p-3 rounded-xl flex items-center gap-3 font-medium transition-all">💾 Saved Trips</button>
+                <button onclick="showPage('profile')" id="btn-profile" class="sidebar-link w-full text-left p-3 rounded-xl flex items-center gap-3 font-medium transition-all">👤 Profile</button>
+            </nav>
+            <button onclick="location.reload()" class="mt-auto p-3 text-gray-500 hover:text-red-400 text-sm font-bold transition">Sign Out</button>
+        </aside>
+
+        <main class="flex-1 overflow-y-auto p-10">
+<!-- Profile Page -->
+            <div id="page-profile" class="page-view hidden max-w-xl mx-auto">
+                <div id="profile-welcome-msg" class="hidden mb-6 p-4 bg-blue-50 border border-blue-200 rounded-xl text-blue-700">
+                    <p class="font-bold text-lg">Welcome to LocalLink!</p>
+                    <p class="text-sm">Please set up your profile to start planning your first adventure.</p>
+                </div>
+                <h1 class="text-3xl font-bold mb-8 text-gray-800">Profile Settings</h1>
+                <div class="bg-white p-8 rounded-2xl shadow-sm border space-y-4">
+                    <label class="block text-sm font-bold text-gray-600">Full Name</label>
+                    <input id="u-name" type="text" placeholder="e.g. Jane Doe" class="w-full border p-3 rounded-xl">
+                    
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-bold text-gray-600">Age</label>
+                            <input id="u-age" type="number" placeholder="25" class="w-full border p-3 rounded-xl">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-bold text-gray-600">Gender</label>
+                            <select id="u-gender" class="w-full border p-3 rounded-xl">
+                                <option value="Male">Male</option><option value="Female">Female</option><option value="Other">Other</option>
+                            </select>
+                        </div>
+                    </div>
+                    <button onclick="saveProfile()" class="w-full bg-green-600 text-white py-4 rounded-xl font-bold shadow-lg hover:bg-green-700 transition">Save Profile & Start Planning</button>
+                </div>
+            </div>
+<!-- Trip Planner Page -->
+            <div id="page-planner" class="page-view hidden max-w-3xl mx-auto">
+                <h1 class="text-3xl font-bold mb-8 text-gray-800">New Adventure</h1>
+                <div class="bg-white p-8 rounded-2xl shadow-sm border space-y-6">
+                    <div class="grid grid-cols-2 gap-4">
+                        <input id="t-place" type="text" placeholder="Where to?" class="border p-3 rounded-xl col-span-2">
+                        <input id="t-dates" type="text" placeholder="Select Dates" class="border p-3 rounded-xl col-span-2 bg-white cursor-pointer">
+                        
+                        <input id="t-budget" type="text" placeholder="Budget (e.g. $1000)" class="border p-3 rounded-xl">
+                        <select id="t-vibe" class="border p-3 rounded-xl bg-white">
+                            <option value="Relaxing">🧘‍♀️ Relaxed / Chill</option>
+                            <option value="Adventure">🧗‍♀️ Active / Adventure</option>
+                            <option value="Cultural">🏕️ Cultural Immersion</option>
+                            <option value="Luxury">💎 Luxury & Comfort</option>
+                            <option value="Budget">💵 Budget</option>
+                            <option value="FamilyFriendly">👨‍👩‍👧 Family-Friendly</option>
+                            <option value="Solo/Introspective">✈️ Solo / Introspective Journey</option>
+                            <option value="Business">💼 Business</option>
+                        </select>
+                        <p class="font-bold text-gray-700 mb-3">How do you like to get around?</p>
+                        <div class="grid grid-cols-1 gap-2 text-sm text-gray-600">
+                            <label class="flex items-center gap-2 p-2 border rounded-lg hover:bg-gray-50 cursor-pointer"><input type="checkbox" name="trans" value="Car">Car Rental</label>
+                            <label class="flex items-center gap-2 p-2 border rounded-lg hover:bg-gray-50 cursor-pointer"><input type="checkbox" name="trans" value="Public Transit">Public Transit (if available)</label>
+                            <label class="flex items-center gap-2 p-2 border rounded-lg hover:bg-gray-50 cursor-pointer"><input type="checkbox" name="trans" value="RideShare">Rideshare (Uber, Lyft, etc)</label>
+                            <label class="flex items-center gap-2 p-2 border rounded-lg hover:bg-gray-50 cursor-pointer"><input type="checkbox" name="trans" value="Walking">Walking</label>
+                            <label class="flex items-center gap-2 p-2 border rounded-lg hover:bg-gray-50 cursor-pointer"><input type="checkbox" name="trans" value="Biking">Biking</label>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <p class="font-bold text-gray-700 mb-3">Interests</p>
+                        <div class="grid grid-cols-1 gap-2 text-sm text-gray-600">
+                            <label class="flex items-center gap-2 p-2 border rounded-lg hover:bg-gray-50 cursor-pointer"><input type="checkbox" name="act" value="Sightseeing"> 🗺️ Sightseeing</label>
+                            <label class="flex items-center gap-2 p-2 border rounded-lg hover:bg-gray-50 cursor-pointer"><input type="checkbox" name="act" value="Outdoor"> 🥾 Outdoor Adventures</label>
+                            <label class="flex items-center gap-2 p-2 border rounded-lg hover:bg-gray-50 cursor-pointer"><input type="checkbox" name="act" value="Cultural"> 🎭 Cultural Experiences</label>
+                            <label class="flex items-center gap-2 p-2 border rounded-lg hover:bg-gray-50 cursor-pointer"><input type="checkbox" name="act" value="Culinary"> 🍽️ Culinary</label>
+                            <label class="flex items-center gap-2 p-2 border rounded-lg hover:bg-gray-50 cursor-pointer"><input type="checkbox" name="act" value="Nightlife/Bars"> 🍸 Nightlife/Bars</label>
+                            <label class="flex items-center gap-2 p-2 border rounded-lg hover:bg-gray-50 cursor-pointer"><input type="checkbox" name="act" value="Shopping"> 🛍️ Shopping</label>
+                            <label class="flex items-center gap-2 p-2 border rounded-lg hover:bg-gray-50 cursor-pointer"><input type="checkbox" name="act" value="Concerts/music">🎵 Concerts and Live Music</label>
+                        </div>
+                    </div>
+                    <div>
+                        <p class="font-bold text-gray-700 mb-3">Who are you Travelling with?</p>
+                        <div class="grid grid-cols-1 gap-2 text-sm text-gray-600">
+                            <label class="flex items-center gap-2 p-2 border rounded-lg hover:bg-gray-50 cursor-pointer"><input type="checkbox" name="part" value="Spouse">Spouse</label>
+                            <label class="flex items-center gap-2 p-2 border rounded-lg hover:bg-gray-50 cursor-pointer"><input type="checkbox" name="part" value="Kids">Kids</label>
+                            <label class="flex items-center gap-2 p-2 border rounded-lg hover:bg-gray-50 cursor-pointer"><input type="checkbox" name="part" value="Relatives"> Relatives</label>
+                            <label class="flex items-center gap-2 p-2 border rounded-lg hover:bg-gray-50 cursor-pointer"><input type="checkbox" name="part" value="Friends">Friends</label>
+                        </div>
+                        <input id="t-gsize" type="text" placeholder="Group Size" class="border p-3 rounded-xl">
+                    </div>
+                    <button onclick="generate()" id="gen-btn" class="w-full bg-blue-600 text-white py-4 rounded-xl font-bold shadow-lg hover:bg-blue-700 transition">Generate Itinerary</button>
+                </div>
+                <div id="itinerary-output" class="mt-10 space-y-6"></div>
+            </div>
+<!-- Saved Trips -->
+            <div id="page-saved" class="page-view hidden max-w-3xl mx-auto">
+                <h1 class="text-3xl font-bold mb-8 text-gray-800">Your Saved Trips</h1>
+                <div id="saved-list" class="space-y-4"></div>
+            </div>
+
+        </main>
+    </div>
+
+    <script>
+        let userEmail = null;
+        let lastTrip = null;
+        let hasProfile = false;
+        let datePicker = null; // variable init
+        window.onload = () => {
+            // Check if viewing a shared itinerary
+            const urlParams = new URLSearchParams(window.location.search);
+            const shareId = urlParams.get('share');
+            if (shareId) {
+                loadSharedItinerary(shareId);
+                return; // Don't initialize the rest of the app
+            }
+            
+            datePicker = flatpickr("#t-dates", {
+                mode: "range",
+                dateFormat: "Y-m-d",
+                minDate: "today"
+            }); // init date picker
+        };
+        // AUTH & NAVIGATION
+        async function handleAuth(type) {
+            const email = document.getElementById('auth-email').value;
+            const password = document.getElementById('auth-pass').value;
+            const res = await fetch(`/${type}`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ email, password })
+            });
+
+            if (res.ok) {
+                userEmail = email;
+                document.getElementById('auth-screen').classList.add('hidden');
+                document.getElementById('main-app').classList.remove('hidden');
+                
+                if (type === 'signup') {
+                    // Force profile setup for new users
+                    document.getElementById('profile-welcome-msg').classList.remove('hidden');
+                    showPage('profile');
+                } else {
+                    await loadProfile();
+                    showPage(hasProfile ? 'planner' : 'profile');
+                }
+            } else alert("Error with " + type);
+        }
+
+        function showPage(page) {
+            // Prevent leaving profile if it's incomplete
+            if (!hasProfile && page !== 'profile') {
+                alert("Please complete your profile first!");
+                return;
+            }
+
+            document.querySelectorAll('.page-view').forEach(p => p.classList.add('hidden'));
+            document.getElementById('page-' + page).classList.remove('hidden');
+            
+            // Sidebar styling via JS to avoid @apply errors
+            ['planner', 'saved', 'profile'].forEach(p => {
+                const btn = document.getElementById('btn-' + p);
+                if (p === page) {
+                    btn.classList.add('bg-blue-600', 'text-white', 'shadow-md');
+                    btn.classList.remove('text-gray-400', 'hover:bg-gray-800', 'hover:text-white');
+                } else {
+                    btn.classList.remove('bg-blue-600', 'text-white', 'shadow-md');
+                    btn.classList.add('text-gray-400', 'hover:bg-gray-800', 'hover:text-white');
+                }
+            });
+            if (page === 'saved') loadSaved();
+        }
+
+        // PROFILE LOGIC
+        async function loadProfile() {
+            const res = await fetch(`/get-profile?email=${userEmail}`);
+            const data = await res.json();
+            if (data.name) {
+                document.getElementById('u-name').value = data.name;
+                document.getElementById('u-age').value = data.age;
+                document.getElementById('u-gender').value = data.gender;
+                hasProfile = true;
+            }
+        }
+
+        async function saveProfile() {
+            const name = document.getElementById('u-name').value;
+            if (!name) return alert("Name is required!");
+// Profile saving
+            const res = await fetch('/save-profile', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                    email: userEmail,
+                    name: name,
+                    age: parseInt(document.getElementById('u-age').value) || 0,
+                    gender: document.getElementById('u-gender').value
+                })
+            });
+            if (res.ok) {
+                hasProfile = true;
+                document.getElementById('profile-welcome-msg').classList.add('hidden');
+                alert("Profile Saved!");
+                showPage('planner');
+            }
+        }
+
+        // TRIP LOGIC
+        async function generate() {
+            const btn = document.getElementById('gen-btn');
+            const dates = datePicker.selectedDates;
+            if (dates.length < 2) return alert("Please select a start and end date.");
+            const interests = Array.from(document.querySelectorAll('input[name="act"]:checked')).map(c => c.value);
+            const travellingwith = Array.from(document.querySelectorAll('input[name="part"]:checked')).map(c => c.value);
+            const transportation = Array.from(document.querySelectorAll('input[name="trans"]:checked')).map(c => c.value);
+            btn.innerText = "Planning your perfect trip!"; btn.disabled = true;
+// Actually generate the itinerary
+            const res = await fetch('/generate-itinerary', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                    email: userEmail,
+                    place: document.getElementById('t-place').value,
+                    start_date: dates[0].toISOString().split('T')[0],
+                    end_date: dates[1].toISOString().split('T')[0],
+                    activity_budget: document.getElementById('t-budget').value,
+                    travel_vibe: document.getElementById('t-vibe').value,
+                    interested_activities: interests,
+                    traveling_with: travellingwith,
+                    group_size: document.getElementById('t-gsize').value,
+                    transportation_options: transportation
+                })
+            });
+
+            if (res.ok) {
+                lastTrip = await res.json();
+                renderTrip(lastTrip, 'itinerary-output', true);
+            } else {
+                const err = await res.json();
+                alert(err.detail || "Error.");
+            }
+            btn.innerText = "Generate Itinerary"; btn.disabled = false;
+        }
+// itinerary save function
+        async function saveTrip() {
+            const res = await fetch('/save-itinerary', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ email: userEmail, itinerary: lastTrip })
+            });
+            if (res.ok) alert("Saved to library!");
+        }
+
+        async function loadSaved() {
+            const res = await fetch(`/get-itineraries?email=${userEmail}`);
+            const trips = await res.json();
+            const container = document.getElementById('saved-list');
+            container.innerHTML = trips.length ? '' : '<p class="text-gray-400 italic text-center py-10">No trips saved yet.</p>';
+            trips.forEach(t => renderTrip(t.data, 'saved-list', false));
+        }
+
+        function renderTrip(data, targetId, showSave, showShare = true) {
+            const container = document.getElementById(targetId);
+            // Store trip data globally for sharing
+            const tripId = 'trip_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+            window[tripId] = data;
+            
+            let buttons = '';
+            if (showSave) {
+                buttons = `<div class="flex gap-2">
+                    <button onclick="saveTrip()" class="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-bold shadow-md hover:bg-blue-700">Save Trip</button>
+                    <button onclick="shareTrip(window.${tripId})" class="bg-purple-600 text-white px-4 py-2 rounded-lg text-sm font-bold shadow-md hover:bg-purple-700">Share Trip</button>
+                </div>`;
+            } else if (showShare) {
+                buttons = `<button onclick="shareTrip(window.${tripId})" class="bg-purple-600 text-white px-4 py-2 rounded-lg text-sm font-bold shadow-md hover:bg-purple-700">Share</button>`;
+            }
+            let html = `<div class="bg-white p-6 rounded-2xl shadow-sm border-l-8 border-blue-500 mb-6">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-2xl font-bold text-gray-800">${data.place_name}</h2>
+                    ${buttons}
+                </div>`;
+            
+            data.days.forEach(day => {
+                html += `<div class="mb-6"><h3 class="font-bold text-blue-600 border-b border-blue-50 pb-2 mb-4">${day.day_name}</h3>`;
+                day.activities.forEach(act => {
+                    // Create Google Maps link - prefer address over coordinates
+                    let mapsLink = '';
+                    let displayLocation = '';
+                    if (act.location) {
+                        mapsLink = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(act.location)}`;
+                        displayLocation = act.location;
+                    } else if (act.location_coordinates) {
+                        mapsLink = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(act.location_coordinates)}`;
+                        displayLocation = act.location_coordinates;
+                    }
+                    
+                    html += `<div class="mb-4 pl-4 border-l-2 border-gray-100">
+                        <p class="font-bold">${act.name} <span class="text-xs text-gray-400 font-normal">(${act.time_to_complete_hours}h)</span></p>
+                        ${mapsLink ? `<p class="text-sm text-blue-600 hover:underline cursor-pointer"><a href="${mapsLink}" target="_blank" class="flex items-center gap-1">📍 ${displayLocation}</a></p>` : ''}
+                        <p class="text-sm text-gray-600">${act.description}</p>
+                    </div>`;
+                });
+                html += `</div>`;
+            });
+            if (targetId === 'itinerary-output') container.innerHTML = html + `</div>`;
+            else container.innerHTML += html + `</div>`;
+        }
+
+        // SHARE LOGIC
+        async function shareTrip(itineraryData) {
+            try {
+                const res = await fetch('/share-itinerary', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ itinerary: itineraryData })
+                });
+                if (res.ok) {
+                    const data = await res.json();
+                    const shareLink = `${window.location.origin}/?share=${data.share_id}`;
+                    document.getElementById('share-link-input').value = shareLink;
+                    document.getElementById('share-modal').classList.remove('hidden');
+                } else {
+                    alert('Error creating share link');
+                }
+            } catch (e) {
+                alert('Error: ' + e.message);
+            }
+        }
+
+        function copyShareLink() {
+            const input = document.getElementById('share-link-input');
+            input.select();
+            navigator.clipboard.writeText(input.value).then(() => {
+                alert('Link copied to clipboard!');
+            });
+        }
+
+        function closeShareModal() {
+            document.getElementById('share-modal').classList.add('hidden');
+        }
+
+        async function loadSharedItinerary(shareId) {
+            try {
+                const res = await fetch(`/shared/${shareId}`);
+                if (res.ok) {
+                    const data = await res.json();
+                    document.getElementById('auth-screen').classList.add('hidden');
+                    document.getElementById('shared-view-banner').classList.remove('hidden');
+                    
+                    // Create a simple view container
+                    const container = document.createElement('div');
+                    container.className = 'max-w-3xl mx-auto p-10';
+                    container.innerHTML = '<div id="shared-itinerary-display" class="mt-10 space-y-6"></div>';
+                    document.body.appendChild(container);
+                    
+                    renderTrip(data, 'shared-itinerary-display', false, false);
+                } else if (res.status === 410) {
+                    document.getElementById('auth-screen').innerHTML = `
+                        <div class="max-w-md w-full p-8 bg-white rounded-2xl shadow-xl border text-center">
+                            <h1 class="text-3xl font-bold text-gray-800 mb-4">⏰ Link Expired</h1>
+                            <p class="text-gray-600 mb-6">This trip link has expired (30 days). Shared links are only valid for 30 days.</p>
+                            <button onclick="location.href='/'" class="bg-blue-600 text-white px-6 py-3 rounded-xl font-bold hover:bg-blue-700">Go to LocalLink</button>
+                        </div>`;
+                } else {
+                    document.getElementById('auth-screen').innerHTML = `
+                        <div class="max-w-md w-full p-8 bg-white rounded-2xl shadow-xl border text-center">
+                            <h1 class="text-3xl font-bold text-gray-800 mb-4">🔍 Trip Not Found</h1>
+                            <p class="text-gray-600 mb-6">This trip link doesn't exist or has been removed.</p>
+                            <button onclick="location.href='/'" class="bg-blue-600 text-white px-6 py-3 rounded-xl font-bold hover:bg-blue-700">Go to LocalLink</button>
+                        </div>`;
+                }
+            } catch (e) {
+                alert('Error loading shared trip: ' + e.message);
+            }
+        }
+
+        function promptSaveCopy() {
+            if (userEmail) {
+                // User is logged in, save directly
+                alert('Feature coming soon: Save shared trip to your account!');
+            } else {
+                // Prompt to login first
+                if (confirm('Please log in to save this trip to your account. Would you like to go to the login page?')) {
+                    location.href = '/';
+                }
+            }
+        }
+    </script>
+</body>
+</html>
