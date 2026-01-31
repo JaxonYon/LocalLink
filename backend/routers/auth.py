@@ -1,7 +1,7 @@
-from app.database import get_db
-from app.models.user import UserDB
-from app.schemas.user import UserAuth
-from app.security import hash_password, verify_password
+from database import get_db
+from models.user import UserDB
+from schemas.user import UserAuth
+from security import hash_password, verify_password
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 

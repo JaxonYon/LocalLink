@@ -1,7 +1,7 @@
 import os
 
-from app.database import Base, engine
-from app.routers import auth, itinerary, profile, share
+from database import Base, engine
+from routers import auth
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
@@ -19,8 +19,5 @@ app.add_middleware(
 )
 
 app.include_router(auth.router)
-app.include_router(profile.router)
-app.include_router(itinerary.router)
-app.include_router(share.router)
 
 app.mount('/', StaticFiles(directory='static', html=True), name='static')
