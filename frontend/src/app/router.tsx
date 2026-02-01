@@ -1,6 +1,6 @@
 import { ProtectedRoute } from '@/app/guards';
 import { AppLayout, AuthLayout } from '@/components/layout';
-import { Account, AuthResetPassword, AuthSignIn, AuthSignUp, Discover, Home, Itinerary, ListingDetail, NotFound, Onboarding, Saved } from '@/pages';
+import { Account, AuthResetPassword, AuthSignIn, AuthSignUp, Discover, Home, ListingDetail, NotFound, Onboarding, Plan, Saved } from '@/pages';
 import { createBrowserRouter } from 'react-router-dom';
 
 const router = createBrowserRouter([
@@ -29,10 +29,10 @@ const router = createBrowserRouter([
 				),
 			},
 			{
-				path: 'itinerary',
+				path: 'plan',
 				element: (
 					<ProtectedRoute>
-						<Itinerary />
+						<Plan />
 					</ProtectedRoute>
 				),
 			},

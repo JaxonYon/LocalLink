@@ -1,26 +1,44 @@
+import logging
 import os
 
-from app.database import Base, engine
-from app.routers import auth, itinerary, profile, share
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.staticfiles import StaticFiles
 
+from app.database import Base, engine
+from app.models import (  # Import models so SQLAlchemy knows about them
+    itinerary, user)
+from app.routers import auth
+from app.routers import itinerary as itinerary_router
+
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
+
+logger.info("🚀 Starting LocalLink backend...")
+
+# Create all tables
+logger.info("📦 Creating database tables...")
 Base.metadata.create_all(bind=engine)
+logger.info("✅ Database tables ready")
 
 app = FastAPI()
+logger.info("✨ FastAPI app initialized")
 
+logger.info("🔐 Setting up CORS middleware...")
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[os.getenv('FRONTEND_URL')],
+    allow_origins=["http://localhost:5173", "http://localhost:3000"],  # Vite dev server and fallback
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+logger.info("✅ CORS configured")
 
-app.include_router(auth.router)
-app.include_router(profile.router)
-app.include_router(itinerary.router)
-app.include_router(share.router)
-
-app.mount('/', StaticFiles(directory='static', html=True), name='static')
+logger.info("📍 Registering routers...")
+app.include_router(auth.router, tags=["auth"])
+app.include_router(itinerary_router.router, tags=["itinerary"])
+logger.info("✅ All routers registered")
+logger.info("🎉 Backend ready!")

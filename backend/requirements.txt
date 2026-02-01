@@ -5,3 +5,4 @@ pydantic
 python-dotenv
 bcrypt
 google-genai
+psycopg2-binary
