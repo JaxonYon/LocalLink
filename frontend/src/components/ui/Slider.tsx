@@ -13,12 +13,12 @@ interface SliderActionsProps {
 const SliderActions: FC<SliderActionsProps> = ({ handleScroll, title }) => {
 	return (
 		<div className='flex items-center gap-2'>
-			<Button variant='outline' size='sm' className='!size-9 !p-2 !rounded-full' onClick={() => handleScroll('left')} aria-label={`Scroll ${title} left`}>
-				<ChevronLeft className='size-8' />
+			<Button variant='outline' size='sm' className='!size-10 !p-2 !rounded-full border-orange-300 text-orange-600 hover:bg-orange-50 hover:text-orange-700 transition-all' onClick={() => handleScroll('left')} aria-label={`Scroll ${title} left`}>
+				<ChevronLeft className='size-5' />
 			</Button>
 
-			<Button variant='outline' size='sm' className='!size-9 !p-2 !rounded-full' onClick={() => handleScroll('right')} aria-label={`Scroll ${title} right`}>
-				<ChevronRight className='size-8' />
+			<Button variant='outline' size='sm' className='!size-10 !p-2 !rounded-full border-orange-300 text-orange-600 hover:bg-orange-50 hover:text-orange-700 transition-all' onClick={() => handleScroll('right')} aria-label={`Scroll ${title} right`}>
+				<ChevronRight className='size-5' />
 			</Button>
 		</div>
 	);
@@ -48,10 +48,10 @@ const Slider = ({ title, subtitle, children, className }: SliderProps): JSX.Elem
 	};
 
 	return (
-		<section className={cn('space-y-4', className)}>
+		<section className={cn('space-y-6 px-6 py-4', className)}>
 			<SectionTitle title={title} subtitle={subtitle} action={<SliderActions handleScroll={handleScroll} title={title} />} />
 
-			<div ref={scrollRef} className='flex gap-4 overflow-x-auto hide-scrollbar' role='region' aria-label={`${title} slider`}>
+			<div ref={scrollRef} className='flex gap-6 overflow-x-auto scrollbar-hide' role='region' aria-label={`${title} slider`} style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
 				{children}
 			</div>
 		</section>
