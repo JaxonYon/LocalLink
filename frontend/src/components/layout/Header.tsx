@@ -16,28 +16,29 @@ const navItems: NavLinkType[] = [
 
 const Header = (): JSX.Element => {
 	return (
-		<div className='h-28 w-full mx-auto fixed flex items-center justify-center'>
-			<header className='h-20 w-full max-w-7xl rounded-full border-b border-border bg-white'>
-				<div className='h-full w-full max-w-6xl mx-auto px-6 py-4 flex items-center justify-start gap-8'>
-					<Link to='/' className='font-semibold text-2xl tracking-tight text-slate-800'>
+		<div className='fixed z-50 w-full flex items-center justify-center bg-orange-600'>
+			<header className='h-20 w-full max-w-6xl'>
+				<div className='h-full w-full mx-auto px-6 py-4 flex items-center justify-start gap-8'>
+					<Link to='/' className='flex items-center gap-2 font-bold text-2xl tracking-tight text-white hover:text-yellow-300 transition-colors duration-300'>
+						<span>🌍</span>
 						Local Link
 					</Link>
 
-					<nav className='hidden md:flex items-center gap-6'>
+					<nav className='hidden md:flex items-center gap-8 flex-1 ml-8'>
 						{navItems.map((item: NavLinkType, idx: number) => (
-							<NavLink key={idx} to={item.to} end={item.to === '/'} className={({ isActive }) => cn('select-none cursor-pointer font-medium text-slate-600 hover:text-slate-800 transition-all duration-300 ease-in-out', isActive ? 'text-slate-800' : '')}>
+							<NavLink key={idx} to={item.to} end={item.to === '/'} className={({ isActive }) => cn('select-none cursor-pointer font-semibold text-white hover:text-yellow-300 transition-all duration-300', isActive ? 'text-yellow-300' : '')}>
 								{item.label}
 							</NavLink>
 						))}
 					</nav>
 
-					<div className='ml-auto flex items-center gap-4'>
+					<div className='ml-auto flex items-center gap-3'>
 						<SignedOut>
-							<Button asChild variant='ghost' size='sm'>
+							<Button asChild variant='ghost' size='sm' className='text-white hover:bg-white hover:bg-opacity-10 border border-white border-opacity-30'>
 								<Link to='/auth/sign-in'>Sign In</Link>
 							</Button>
 
-							<Button asChild variant='primary' size='sm'>
+							<Button asChild variant='primary' size='sm' className='bg-yellow-400 hover:bg-yellow-500 text-gray-900 font-semibold'>
 								<Link to='/auth/sign-up'>Sign Up</Link>
 							</Button>
 						</SignedOut>
