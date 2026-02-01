@@ -17,8 +17,8 @@ export const OnboardingGuard = ({ children }: OnboardingGuardProps): JSX.Element
 
 	if (!isLoaded) {
 		return (
-			<div className="flex items-center justify-center py-16">
-				<Spinner label="Preparing your workspace" />
+			<div className='fixed inset-0 flex items-center justify-center bg-gradient-to-br from-orange-dark via-orange-600 to-orange-700 z-50'>
+				<Spinner label='Preparing your workspace' />
 			</div>
 		);
 	}
@@ -27,7 +27,7 @@ export const OnboardingGuard = ({ children }: OnboardingGuardProps): JSX.Element
 	const isExcluded = excludedRoutes.some((route) => location.pathname.startsWith(route));
 
 	if (needsOnboarding && !isExcluded) {
-		return <Navigate to="/onboarding" replace />;
+		return <Navigate to='/onboarding' replace />;
 	}
 
 	return <>{children}</>;
