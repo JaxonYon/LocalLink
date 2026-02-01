@@ -1,12 +1,11 @@
 import logging
 
+from database import get_db
 from fastapi import APIRouter, Depends, HTTPException
+from models.user import UserDB
+from schemas.user import UserAuth
+from security import hash_password, verify_password
 from sqlalchemy.orm import Session
-
-from app.database import get_db
-from app.models.user import UserDB
-from app.schemas.user import UserAuth
-from app.security import hash_password, verify_password
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix='/auth')

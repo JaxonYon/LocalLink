@@ -2,8 +2,7 @@ import logging
 import os
 
 from google import genai
-
-from app.schemas.itinerary import Trip
+from schemas.itinerary import Trip
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)

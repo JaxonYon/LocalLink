@@ -1,14 +1,13 @@
 import logging
 import os
 
+from database import Base, engine
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-
-from app.database import Base, engine
-from app.models import (  # Import models so SQLAlchemy knows about them
-    itinerary, user)
-from app.routers import auth
-from app.routers import itinerary as itinerary_router
+from models import (itinerary,  # Import models so SQLAlchemy knows about them
+                    user)
+from routers import auth
+from routers import itinerary as itinerary_router
 
 # Configure logging
 logging.basicConfig(

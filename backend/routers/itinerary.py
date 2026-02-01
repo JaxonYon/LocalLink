@@ -1,13 +1,14 @@
+import hashlib
 import json
 import logging
 
+from ai.generator import generate_trip
+from cache import cache_clear_pattern, cache_get, cache_set, rate_limit
+from database import SessionLocal
 from fastapi import APIRouter, HTTPException
-
-from app.ai.generator import generate_trip
-from app.database import SessionLocal
-from app.models.itinerary import ItineraryDB
-from app.models.user import UserDB
-from app.schemas.itinerary import SaveTripRequest, TripRequest
+from models.itinerary import ItineraryDB
+from models.user import UserDB
+from schemas.itinerary import SaveTripRequest, TripRequest
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -19,8 +20,25 @@ async def generate_itinerary(req: TripRequest):
     Generate AI-powered trip itinerary based on user preferences.
     Uses Google Gemini 2.5 Flash for structured JSON generation.
     Auto-creates user in database if they don't exist (Clerk integration).
+    Results are cached to avoid redundant AI calls.
     """
     logger.info(f"📥 /generate-itinerary request received from {req.email}")
+
+    # Rate limiting: 20 requests per hour per user
+    if not rate_limit(f"ratelimit:itinerary:{req.email}", limit=20, window=3600):
+        logger.warning(f"⚠️  Rate limit exceeded for {req.email}")
+        raise HTTPException(status_code=429, detail="Too many requests. Max 20 per hour.")
+
+    # Create cache key based on request parameters
+    cache_key = f"itinerary:{hashlib.md5(f'{req.place}:{req.start_date}:{req.end_date}:{req.travel_vibe}'.encode()).hexdigest()}"
+
+    # Check cache first
+    logger.debug(f"🔍 Checking cache for: {cache_key}")
+    cached_result = cache_get(cache_key)
+    if cached_result:
+        logger.info(f"⚡ Cache HIT - returning cached itinerary for {req.place}")
+        return cached_result
+
     db = SessionLocal()
 
     try:
@@ -78,6 +96,11 @@ Create a realistic itinerary with 3-5 activities per day based on the travel vib
             f"✅ Itinerary generated: {len(result.days)} days, "
             f"{sum(len(day.activities) for day in result.days)} total activities"
         )
+
+        # Cache the result for 24 hours
+        cache_set(cache_key, result.model_dump(), ttl=86400)
+        logger.info(f"💾 Cached itinerary for {req.place}")
+
         return result
 
     except Exception as e:
@@ -93,8 +116,15 @@ def save_itinerary(req: SaveTripRequest):
     """
     Save generated itinerary to user's account.
     Auto-creates user if they don't exist (Clerk integration).
+    Rate limited to 50 saves per hour.
     """
     logger.info(f"📥 /save-itinerary request received from {req.email}")
+
+    # Rate limiting: 50 saves per hour per user
+    if not rate_limit(f"ratelimit:save:{req.email}", limit=50, window=3600):
+        logger.warning(f"⚠️  Rate limit exceeded for save: {req.email}")
+        raise HTTPException(status_code=429, detail="Too many saves. Max 50 per hour.")
+
     db = SessionLocal()
 
     try:

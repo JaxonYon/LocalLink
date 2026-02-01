@@ -1,101 +1,110 @@
-# LocalLink – AI‑Powered Travel Planner
+# LocalLink – AI-Powered Travel Planner
 
-LocalLink is a FastAPI backend that generates personalized travel itineraries using Gemini, manages user accounts, stores saved trips, and supports sharing itineraries via unique links.
+FastAPI backend + React frontend for generating personalized travel itineraries using Google Gemini AI.
 
-This README provides everything needed to run the project locally or inside Docker.
+## Tech Stack
 
----
+- **Backend:** FastAPI, PostgreSQL, Redis (optional), Google Gemini AI
+- **Frontend:** React, TypeScript, Vite, Clerk Auth
+- **Deployment:** Railway (backend), Docker optional
 
-## 🔑 Environment Variables
+## Quick Start
 
-Create a `.env` file in the backend root:
+### Prerequisites
 
-```
-GEMINI_API_KEY=your_api_key_here
-```
+- Python 3.11+
+- Node.js 18+
+- PostgreSQL (Railway or local)
+- Google Gemini API key
 
----
+### Local Setup (No Docker)
 
-## 📦 Install Dependencies
-
-From the backend folder:
-
-```
+```bash
+# Backend
+cd backend
+python3 -m venv venv
+source venv/bin/activate
 pip install -r requirements.txt
+uvicorn main:app --reload
+
+# Frontend (new terminal)
+cd frontend
+npm install
+npm run dev
 ```
 
----
+### Docker Setup (Optional)
 
-## 🚀 Run the Server (Local Development)
-
-```
-python -m uvicorn app.main:app --reload
-```
-
-API URL:
-
-```
-http://localhost:8000
+```bash
+cd backend
+docker compose up
 ```
 
-Swagger docs:
+### Environment Variables
 
-```
-http://localhost:8000/docs
-```
+Create `backend/.env`:
 
----
-
-# 🐳 Running with Docker
-
-## Build the image
-
-```
-docker build -t locallink-backend .
+```env
+DATABASE_URL=postgresql://user:password@host:port/database
+GEMINI_API_KEY=your_gemini_api_key
+FRONTEND_URL=http://localhost:5173
+REDIS_HOST=localhost  # optional
+REDIS_PORT=6379       # optional
 ```
 
-## Run the container
+## API Documentation
+
+- Backend: `http://localhost:8000`
+- API Docs: `http://localhost:8000/docs`
+- Frontend: `http://localhost:5173`
+
+## Deployment
+
+**Railway:**
+1. Push to GitHub
+2. Connect repo to Railway
+3. Set environment variables in Railway dashboard
+4. Auto-deploys on push to `main`
+
+## Project Structure
 
 ```
-docker run -p 8000:8000 --env-file .env locallink-backend
+LocalLink/
+├── backend/           # FastAPI app
+│   ├── main.py       # Entry point
+│   ├── database.py   # PostgreSQL config
+│   ├── cache.py      # Redis caching
+│   ├── routers/      # API routes
+│   ├── models/       # Database models
+│   ├── schemas/      # Pydantic schemas
+│   ├── ai/           # Gemini integration
+│   └── venv/         # Virtual environment
+└── frontend/         # React app
+    └── src/
 ```
 
----
+## Features
 
-# 🐳 Using Docker Compose (Recommended)
+- ✅ AI-powered itinerary generation
+- ✅ User authentication (Clerk)
+- ✅ PostgreSQL database
+- ✅ Redis caching & rate limiting (optional)
+- ✅ Shareable itinerary links
+- ✅ Docker support (optional)
+- ✅ Railway deployment ready
 
+## Troubleshooting
+
+**Backend won't start?**
+```bash
+source backend/venv/bin/activate
+cd backend && uvicorn main:app --reload
 ```
-docker compose up --build
-```
 
-This automatically loads your `.env` file and mounts your code for live reload.
+**Database connection errors?**
+- Verify `DATABASE_URL` in `.env`
+- Ensure PostgreSQL is running
 
----
-
-# 🧰 Development Commands
-
-| Action             | Command                                     |
-| ------------------ | ------------------------------------------- |
-| Run server         | `python -m uvicorn app.main:app --reload`   |
-| Install deps       | `pip install -r requirements.txt`           |
-| Build Docker image | `docker build -t locallink-backend .`       |
-| Run Docker         | `docker run -p 8000:8000 locallink-backend` |
-| Docker Compose     | `docker compose up --build`                 |
-
----
-
-# 📝 TODO List
-
-### Backend Improvements
-
-- **Change “time” to “schedule”**  
-  Update itinerary schema + frontend formatting.
-
-- **Password requirements**  
-  Add validation (min length, special chars, etc.).
-
-- **Email verification**  
-  Add verification tokens + email service (SendGrid, Resend, etc.).
-
-- **Location information**  
-  Add richer metadata (coordinates, address validation, Google Places API).
+**Redis not connecting?**
+- App works without Redis (graceful fallback)
+- To enable: `brew install redis && brew services start redis`
