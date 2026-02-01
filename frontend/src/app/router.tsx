@@ -1,6 +1,6 @@
 import { ProtectedRoute } from '@/app/guards';
 import { AppLayout, AuthLayout } from '@/components/layout';
-import { Account, AuthResetPassword, AuthSignIn, AuthSignUp, Discover, Home, ListingDetail, NotFound, Onboarding, Plan, Saved } from '@/pages';
+import { Account, AuthResetPassword, AuthSignIn, AuthSignUp, Contact, Discover, Home, ListingDetail, NotFound, Onboarding, Plan, PrivacyPolicy, Saved, TermsOfService } from '@/pages';
 import { createBrowserRouter } from 'react-router-dom';
 
 const router = createBrowserRouter([
@@ -43,6 +43,18 @@ const router = createBrowserRouter([
 						<Account />
 					</ProtectedRoute>
 				),
+			},
+			{
+				path: 'contact',
+				element: <Contact />,
+			},
+			{
+				path: 'legal/terms',
+				element: <TermsOfService />,
+			},
+			{
+				path: 'legal/privacy',
+				element: <PrivacyPolicy />,
 			},
 			{
 				path: 'onboarding',

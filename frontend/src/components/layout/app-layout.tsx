@@ -1,22 +1,20 @@
 import { OnboardingGuard } from '@/app/guards';
+import { Footer } from '@/components/layout/Footer';
 import { Header } from '@/components/layout/header';
 import { Outlet } from 'react-router-dom';
-import { Container } from './Container';
 
 const AppLayout = (): JSX.Element => {
 	return (
 		<OnboardingGuard>
-			{/* <div className='min-h-screen bg-white'> */}
-			<Header />
+			<div className='min-h-screen flex flex-col'>
+				<Header />
 
-			<main
-			// className='py-10'
-			>
-				{/* <Container> */}
-				<Outlet />
-				{/* </Container> */}
-			</main>
-			{/* </div> */}
+				<main className='flex-1'>
+					<Outlet />
+				</main>
+
+				<Footer />
+			</div>
 		</OnboardingGuard>
 	);
 };

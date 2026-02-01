@@ -1,15 +1,17 @@
 import { useUser } from '@clerk/clerk-react';
 import { AlertTriangle, Edit2, Lock, Save, Trash2, X } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
-import { Button, Card, Input } from '@/components/ui';
-import { clearOnboarding, getOnboardingData } from '@/store';
+import { Button, Card, Input, Select } from '@/components/ui';
+import { clearOnboarding, getOnboardingData, setOnboardingData } from '@/store';
+import type { OnboardingData } from '@/types';
 
 export const Account = (): JSX.Element => {
 	const { user } = useUser();
 	const onboarding = getOnboardingData();
 
 	const [isEditingProfile, setIsEditingProfile] = useState(false);
+	const [isEditingPreferences, setIsEditingPreferences] = useState(false);
 	const [isChangingPassword, setIsChangingPassword] = useState(false);
 	const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
@@ -18,11 +20,21 @@ export const Account = (): JSX.Element => {
 		lastName: user?.lastName || '',
 	});
 
+	const [preferencesData, setPreferencesData] = useState<OnboardingData | null>(onboarding);
+
 	const [passwordData, setPasswordData] = useState({
 		currentPassword: '',
 		newPassword: '',
 		confirmPassword: '',
 	});
+
+	// Sync profile data when user changes
+	useEffect(() => {
+		setProfileData({
+			firstName: user?.firstName || '',
+			lastName: user?.lastName || '',
+		});
+	}, [user]);
 
 	const handleSaveProfile = async () => {
 		try {
@@ -30,10 +42,19 @@ export const Account = (): JSX.Element => {
 				firstName: profileData.firstName,
 				lastName: profileData.lastName,
 			});
+			// Force reload user data to reflect changes
+			await user?.reload();
 			setIsEditingProfile(false);
 		} catch (error) {
 			console.error('Failed to update profile:', error);
 			alert('Failed to update profile. Please try again.');
+		}
+	};
+
+	const handleSavePreferences = () => {
+		if (preferencesData) {
+			setOnboardingData(preferencesData);
+			setIsEditingPreferences(false);
 		}
 	};
 
@@ -134,32 +155,92 @@ export const Account = (): JSX.Element => {
 					)}
 				</Card>
 
-				{/* Onboarding Summary Card */}
-				<Card className='space-y-3 p-6'>
-					<h2 className='text-lg font-semibold text-text'>Onboarding Summary</h2>
-					{onboarding ? (
-						<div className='space-y-2 text-sm text-text'>
-							<p>
-								<span className='font-medium'>Trip style:</span> {onboarding.tripStyle}
-							</p>
-							<p>
-								<span className='font-medium'>Budget:</span> {onboarding.budget}
-							</p>
-							<p>
-								<span className='font-medium'>Activities:</span> {onboarding.activities.join(', ') || 'Not set'}
-							</p>
-							<p>
-								<span className='font-medium'>Party size:</span> {onboarding.partySize}
-							</p>
-							<p>
-								<span className='font-medium'>Home location:</span> {onboarding.homeLocation}
-							</p>
-							<p>
-								<span className='font-medium'>Accessibility:</span> {onboarding.accessibility.join(', ') || 'None'}
-							</p>
-						</div>
+				{/* Travel Preferences Card */}
+				<Card className='space-y-4 p-6'>
+					<div className='flex items-center justify-between'>
+						<h2 className='text-lg font-semibold text-text'>Travel Preferences</h2>
+						{!isEditingPreferences ? (
+							<Button variant='ghost' size='sm' onClick={() => setIsEditingPreferences(true)} className='gap-2'>
+								<Edit2 className='h-4 w-4' />
+								Edit
+							</Button>
+						) : (
+							<div className='flex gap-2'>
+								<Button
+									variant='ghost'
+									size='sm'
+									onClick={() => {
+										setIsEditingPreferences(false);
+										setPreferencesData(onboarding);
+									}}>
+									<X className='h-4 w-4' />
+								</Button>
+								<Button variant='primary' size='sm' onClick={handleSavePreferences} className='gap-2'>
+									<Save className='h-4 w-4' />
+									Save
+								</Button>
+							</div>
+						)}
+					</div>
+
+					{preferencesData ? (
+						isEditingPreferences ? (
+							<div className='space-y-4'>
+								<div>
+									<label className='text-xs font-semibold uppercase tracking-widest text-text-subtle'>Trip Style</label>
+									<Select value={preferencesData.tripStyle} onChange={(e) => setPreferencesData({ ...preferencesData, tripStyle: e.target.value as any })} className='mt-1'>
+										<option value='local-culture'>Local Culture</option>
+										<option value='adventure'>Adventure</option>
+										<option value='relaxed'>Relaxed</option>
+										<option value='foodie'>Foodie</option>
+										<option value='wellness'>Wellness</option>
+									</Select>
+								</div>
+								<div>
+									<label className='text-xs font-semibold uppercase tracking-widest text-text-subtle'>Budget</label>
+									<Select value={preferencesData.budget} onChange={(e) => setPreferencesData({ ...preferencesData, budget: e.target.value as any })} className='mt-1'>
+										<option value='budget'>Budget</option>
+										<option value='mid'>Mid-Range</option>
+										<option value='premium'>Premium</option>
+									</Select>
+								</div>
+								<div>
+									<label className='text-xs font-semibold uppercase tracking-widest text-text-subtle'>Activities (comma separated)</label>
+									<Input value={preferencesData.activities.join(', ')} onChange={(e) => setPreferencesData({ ...preferencesData, activities: e.target.value.split(',').map((a) => a.trim()) })} className='mt-1' placeholder='hiking, museums, food tours' />
+								</div>
+								<div>
+									<label className='text-xs font-semibold uppercase tracking-widest text-text-subtle'>Party Size</label>
+									<Input type='number' min='1' value={preferencesData.partySize} onChange={(e) => setPreferencesData({ ...preferencesData, partySize: parseInt(e.target.value) || 1 })} className='mt-1' />
+								</div>
+								<div>
+									<label className='text-xs font-semibold uppercase tracking-widest text-text-subtle'>Home Location</label>
+									<Input value={preferencesData.homeLocation} onChange={(e) => setPreferencesData({ ...preferencesData, homeLocation: e.target.value })} className='mt-1' placeholder='New York, NY' />
+								</div>
+							</div>
+						) : (
+							<div className='space-y-2 text-sm text-text'>
+								<p>
+									<span className='font-medium'>Trip style:</span> {preferencesData.tripStyle.replace('-', ' ')}
+								</p>
+								<p>
+									<span className='font-medium'>Budget:</span> {preferencesData.budget}
+								</p>
+								<p>
+									<span className='font-medium'>Activities:</span> {preferencesData.activities.join(', ') || 'Not set'}
+								</p>
+								<p>
+									<span className='font-medium'>Party size:</span> {preferencesData.partySize}
+								</p>
+								<p>
+									<span className='font-medium'>Home location:</span> {preferencesData.homeLocation}
+								</p>
+								<p>
+									<span className='font-medium'>Accessibility:</span> {preferencesData.accessibility.join(', ') || 'None'}
+								</p>
+							</div>
+						)
 					) : (
-						<p className='text-sm text-text-subtle'>Onboarding details are not available.</p>
+						<p className='text-sm text-text-subtle'>Travel preferences are not available. Complete onboarding to set your preferences.</p>
 					)}
 				</Card>
 

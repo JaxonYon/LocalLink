@@ -1,5 +1,6 @@
-import { Button, Input, Select } from '@/components/ui';
 import { listingCategories } from '@/data';
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 const categoryOptions = listingCategories.map((category) => ({
 	value: category.id,
@@ -7,6 +8,18 @@ const categoryOptions = listingCategories.map((category) => ({
 }));
 
 const Hero = (): JSX.Element => {
+	const navigate = useNavigate();
+	const [searchQuery, setSearchQuery] = useState('');
+
+	const handleSearch = (e: React.FormEvent) => {
+		e.preventDefault();
+		if (searchQuery.trim()) {
+			navigate(`/discover?search=${encodeURIComponent(searchQuery.trim())}`);
+		} else {
+			navigate('/discover');
+		}
+	};
+
 	return (
 		<section className='h-screen w-full p-8 pt-28 flex items-center justify-center bg-orange-dark'>
 			<div className='size-full max-w-7xl grid lg:grid-cols-[1.2fr_0.8fr] gap-8'>
@@ -30,34 +43,36 @@ const Hero = (): JSX.Element => {
 				<div className='mx-auto grid max-w-7xl grid-cols-1 items-center gap-12 px-6 py-20 md:grid-cols-2'>
 					<div className='space-y-6'>
 						<h1 className='font-semibold text-4xl text-gray-900 leading-tight'>
-							Fast Convenient
+							Discover Your Next
 							<br />
-							Laundry For You
+							Adventure With AI
 						</h1>
 
-						<p className='font-normal text-base text-gray-600 max-w-md'>Our modern washers and dryers are designed to get your clothes clean and fresh in no time. We also offer a variety of wash cycles to suit your specific needs, from delicates to heavy-duty.</p>
+						<p className='font-normal text-base text-gray-600 max-w-md'>Create personalized travel itineraries with our AI-powered planner. Get local insights, hidden gems, and tailored recommendations for your perfect trip.</p>
 
-						<div className='flex w-full max-w-md items-center overflow-hidden rounded-xl border border-gray-200'>
-							<input type='text' placeholder='Enter your ZIP code' className='w-full px-4 py-3 font-normal text-sm text-gray-700 outline-none' />
-							<button className='flex h-full items-center justify-center bg-yellow-400 px-5'>➜</button>
-						</div>
+						<form onSubmit={handleSearch} className='flex w-full max-w-md items-center overflow-hidden rounded-xl border border-gray-200'>
+							<input type='text' placeholder='Search destinations...' value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className='w-full px-4 py-3 font-normal text-sm text-gray-700 outline-none' />
+							<button type='submit' className='flex h-full items-center justify-center bg-yellow-400 px-5 hover:bg-yellow-500 transition-colors'>
+								➜
+							</button>
+						</form>
 
 						<div className='flex gap-10 pt-6'>
 							<div>
-								<p className='font-semibold text-lg text-gray-900'>18</p>
-								<p className='font-normal text-sm text-gray-500'>Laundromats</p>
+								<p className='font-semibold text-lg text-gray-900'>50+</p>
+								<p className='font-normal text-sm text-gray-500'>Destinations</p>
 							</div>
 
 							<div>
-								<p className='font-semibold text-lg text-gray-900'>5,000+</p>
-								<p className='font-normal text-sm text-gray-500'>Customers</p>
+								<p className='font-semibold text-lg text-gray-900'>10,000+</p>
+								<p className='font-normal text-sm text-gray-500'>Itineraries</p>
 							</div>
 
 							<div>
 								<p className='font-semibold text-lg text-gray-900 flex items-center gap-1'>
-									4.5 <span className='text-yellow-400'>★</span>
+									4.8 <span className='text-yellow-400'>★</span>
 								</p>
-								<p className='font-normal text-sm text-gray-500'>Average Rating</p>
+								<p className='font-normal text-sm text-gray-500'>User Rating</p>
 							</div>
 						</div>
 					</div>
