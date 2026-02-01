@@ -1,11 +1,12 @@
 import { Button, Input } from '@/components/ui';
-import { useSignIn } from '@clerk/clerk-react';
-import { useState } from 'react';
+import { useAuth, useSignIn } from '@clerk/clerk-react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 type ResetStage = 'email' | 'code' | 'password' | 'success';
 
 export const AuthResetPassword = (): JSX.Element => {
+	const { isSignedIn } = useAuth();
 	const { signIn, isLoaded } = useSignIn();
 	const navigate = useNavigate();
 	const [stage, setStage] = useState<ResetStage>('email');
@@ -15,6 +16,13 @@ export const AuthResetPassword = (): JSX.Element => {
 	const [confirmPassword, setConfirmPassword] = useState('');
 	const [error, setError] = useState('');
 	const [isLoading, setIsLoading] = useState(false);
+
+	// Redirect if already signed in (except when on success stage)
+	useEffect(() => {
+		if (isSignedIn && stage !== 'success') {
+			navigate('/');
+		}
+	}, [isSignedIn, stage, navigate]);
 
 	const handleRequestReset = async (e: React.FormEvent) => {
 		e.preventDefault();

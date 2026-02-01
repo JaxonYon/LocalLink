@@ -1,7 +1,8 @@
 import { Button } from '@/components/ui';
 import { cn } from '@/utils';
-import { SignedIn, SignedOut, UserButton } from '@clerk/clerk-react';
-import { Link, NavLink } from 'react-router-dom';
+import { SignedIn, SignedOut, useClerk, useUser } from '@clerk/clerk-react';
+import { useEffect, useRef, useState } from 'react';
+import { Link, NavLink, useNavigate } from 'react-router-dom';
 
 type NavLinkType = {
 	label: string;
@@ -15,6 +16,30 @@ const navItems: NavLinkType[] = [
 ];
 
 const Header = (): JSX.Element => {
+	const { user } = useUser();
+	const { signOut } = useClerk();
+	const navigate = useNavigate();
+	const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+	const dropdownRef = useRef<HTMLDivElement>(null);
+
+	// Close dropdown when clicking outside
+	useEffect(() => {
+		const handleClickOutside = (event: MouseEvent) => {
+			if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+				setIsDropdownOpen(false);
+			}
+		};
+
+		document.addEventListener('mousedown', handleClickOutside);
+		return () => document.removeEventListener('mousedown', handleClickOutside);
+	}, []);
+
+	const handleSignOut = async () => {
+		await signOut();
+		navigate('/');
+		setIsDropdownOpen(false);
+	};
+
 	return (
 		<div className='fixed z-50 w-full flex items-center justify-center bg-orange-600'>
 			<header className='h-20 w-full max-w-6xl'>
@@ -44,7 +69,55 @@ const Header = (): JSX.Element => {
 						</SignedOut>
 
 						<SignedIn>
-							<UserButton afterSignOutUrl='/' />
+							<div className='relative' ref={dropdownRef}>
+								<button onClick={() => setIsDropdownOpen(!isDropdownOpen)} className='flex items-center gap-2 px-3 py-2 rounded-full bg-white bg-opacity-20 hover:bg-opacity-30 transition-all duration-200 border border-white border-opacity-30'>
+									<div className='w-8 h-8 rounded-full bg-yellow-400 flex items-center justify-center font-bold text-gray-900 text-sm'>{user?.firstName?.[0] || user?.emailAddresses?.[0]?.emailAddress?.[0]?.toUpperCase() || 'U'}</div>
+									<svg className={cn('w-4 h-4 text-white transition-transform', isDropdownOpen ? 'rotate-180' : '')} fill='none' stroke='currentColor' viewBox='0 0 24 24'>
+										<path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M19 9l-7 7-7-7' />
+									</svg>
+								</button>
+
+								{isDropdownOpen && (
+									<div className='absolute right-0 mt-2 w-64 bg-white rounded-xl shadow-2xl overflow-hidden border border-gray-200 py-2'>
+										<div className='px-4 py-3 border-b border-gray-200'>
+											<p className='font-semibold text-gray-900'>{user?.fullName || 'User'}</p>
+											<p className='text-sm text-gray-600'>{user?.emailAddresses?.[0]?.emailAddress}</p>
+										</div>
+
+										<div className='py-2'>
+											<Link to='/account' onClick={() => setIsDropdownOpen(false)} className='flex items-center gap-3 px-4 py-2 hover:bg-orange-50 text-gray-700 hover:text-orange-600 transition-colors'>
+												<svg className='w-5 h-5' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
+													<path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z' />
+												</svg>
+												<span className='font-medium'>My Account</span>
+											</Link>
+
+											<Link to='/saved' onClick={() => setIsDropdownOpen(false)} className='flex items-center gap-3 px-4 py-2 hover:bg-orange-50 text-gray-700 hover:text-orange-600 transition-colors'>
+												<svg className='w-5 h-5' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
+													<path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z' />
+												</svg>
+												<span className='font-medium'>Saved</span>
+											</Link>
+
+											<Link to='/itinerary' onClick={() => setIsDropdownOpen(false)} className='flex items-center gap-3 px-4 py-2 hover:bg-orange-50 text-gray-700 hover:text-orange-600 transition-colors'>
+												<svg className='w-5 h-5' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
+													<path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2' />
+												</svg>
+												<span className='font-medium'>My Itineraries</span>
+											</Link>
+										</div>
+
+										<div className='border-t border-gray-200 pt-2'>
+											<button onClick={handleSignOut} className='flex items-center gap-3 px-4 py-2 hover:bg-red-50 text-red-600 hover:text-red-700 transition-colors w-full text-left'>
+												<svg className='w-5 h-5' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
+													<path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1' />
+												</svg>
+												<span className='font-medium'>Sign Out</span>
+											</button>
+										</div>
+									</div>
+								)}
+							</div>
 						</SignedIn>
 					</div>
 				</div>
