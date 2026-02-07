@@ -1,4 +1,4 @@
-export * from './Account';
+export * from './account';
 export * from './AuthResetPassword';
 export * from './AuthSignIn';
 export * from './AuthSignUp';
@@ -7,7 +7,7 @@ export * from './Discover';
 export * from './Home';
 export * from './ListingDetail';
 export * from './NotFound';
-export * from './Onboarding';
+export * from './onboarding';
 export * from './Plan';
 export * from './PrivacyPolicy';
 export * from './Saved';

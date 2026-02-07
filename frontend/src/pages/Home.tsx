@@ -1,4 +1,5 @@
 import { FeaturedSlider, PopularPlacesSlider, TopRatedGuidesSlider } from '@/components/home';
+import { Button } from '@/components/ui';
 import { listingCategories } from '@/data';
 
 const categoryOptions = listingCategories.map((category) => ({
@@ -9,8 +10,11 @@ const categoryOptions = listingCategories.map((category) => ({
 const Home = (): JSX.Element => {
 	return (
 		<div className='space-y-10'>
-			<section className='h-screen w-full flex items-center justify-center bg-orange-600  relative overflow-hidden'>
-				
+			<section className='h-screen w-full flex items-center justify-center bg-orange-600 relative overflow-hidden'>
+				<div className='absolute inset-0'>
+					<div className='absolute -top-24 right-8 h-64 w-64 rounded-full bg-white/10' />
+					<div className='absolute -bottom-32 left-10 h-72 w-72 rounded-full bg-white/10' />
+				</div>
 				<div className='w-full max-w-6xl mx-auto px-6 py-20 flex flex-col items-center justify-center gap-8 relative z-10'>
 					<div className='flex flex-col items-center justify-center gap-4'>
 						<span className='inline-block px-4 py-2 bg-white bg-opacity-20 text-white rounded-full text-sm font-medium backdrop-blur-sm'>✨ Discover Your Next Adventure</span>
@@ -21,10 +25,10 @@ const Home = (): JSX.Element => {
 					<div className='w-full max-w-2xl flex flex-col gap-4 mt-4'>
 						<div className='flex flex-col sm:flex-row gap-3'>
 							<input type='text' placeholder='Where do you want to go?' className='flex-1 px-6 py-4 font-normal text-base text-gray-900 rounded-xl outline-none shadow-lg hover:shadow-xl transition-shadow' />
-							<button className='flex items-center justify-center gap-2 bg-yellow-400 hover:bg-yellow-500 text-gray-900 font-semibold px-8 py-4 rounded-xl shadow-lg hover:shadow-xl transition-all whitespace-nowrap'>
+							<Button variant='accent' size='xl' className='rounded-xl shadow-lg hover:shadow-xl whitespace-nowrap'>
 								<span>Search</span>
 								<span>🔍</span>
-							</button>
+							</Button>
 						</div>
 						<p className='text-sm text-orange-100'>Popular searches: Paris, Tokyo, Bali, New York, Barcelona</p>
 					</div>

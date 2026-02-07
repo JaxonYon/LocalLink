@@ -64,7 +64,7 @@ export const AuthSignIn = (): JSX.Element => {
 				</div>
 				<Input type='password' placeholder='Enter your password' value={password} onChange={(e) => setPassword(e.target.value)} required />
 
-				<Button type='submit' disabled={isLoading} className='w-full bg-orange-600 hover:bg-orange-700 text-white font-semibold'>
+				<Button type='submit' disabled={isLoading} fullWidth>
 					{isLoading ? 'Signing in...' : 'Sign In'}
 				</Button>
 			</form>

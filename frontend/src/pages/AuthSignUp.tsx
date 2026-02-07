@@ -88,7 +88,7 @@ export const AuthSignUp = (): JSX.Element => {
 
 				<Input label='Confirm password' type='password' placeholder='Re-enter your password' name='confirmPassword' value={formData.confirmPassword} onChange={handleChange} required />
 
-				<Button type='submit' disabled={isLoading} className='w-full bg-orange-600 hover:bg-orange-700 text-white font-semibold'>
+				<Button type='submit' disabled={isLoading} fullWidth>
 					{isLoading ? 'Creating account...' : 'Create Account'}
 				</Button>
 			</form>

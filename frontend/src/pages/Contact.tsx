@@ -1,4 +1,4 @@
-import { Card } from '@/components/ui';
+import { Button, Card } from '@/components/ui';
 import { Mail, MessageSquare, Phone } from 'lucide-react';
 
 export const Contact = (): JSX.Element => {
@@ -27,7 +27,9 @@ export const Contact = (): JSX.Element => {
 					</div>
 					<h3 className='font-semibold text-text'>Live Chat</h3>
 					<p className='text-sm text-text-subtle'>Chat with our team</p>
-					<button className='text-blue-600 hover:underline text-sm'>Start Chat</button>
+					<Button variant='link' size='sm'>
+						Start Chat
+					</Button>
 				</Card>
 
 				<Card className='p-6 space-y-3 text-center'>
@@ -63,9 +65,9 @@ export const Contact = (): JSX.Element => {
 						<label className='block text-sm font-medium text-text mb-1'>Message</label>
 						<textarea rows={6} className='w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500' placeholder='Tell us more...' />
 					</div>
-					<button type='submit' className='w-full md:w-auto px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors'>
+					<Button type='submit' fullWidth className='md:w-auto'>
 						Send Message
-					</button>
+					</Button>
 				</form>
 			</Card>
 

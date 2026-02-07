@@ -1,7 +1,7 @@
 import { ProtectedRoute } from '@/app/guards';
 import { AppLayout, AuthLayout } from '@/components/layout';
-import { Account, AuthResetPassword, AuthSignIn, AuthSignUp, Contact, Discover, Home, ListingDetail, NotFound, Onboarding, Plan, PrivacyPolicy, Saved, TermsOfService } from '@/pages';
-import { createBrowserRouter } from 'react-router-dom';
+import { Account, AuthResetPassword, AuthSignIn, AuthSignUp, Contact, Discover, Home, ListingDetail, NotFound, OnboardingPage, Plan, PrivacyPolicy, Saved, TermsOfService } from '@/pages';
+import { Navigate, createBrowserRouter } from 'react-router-dom';
 
 const router = createBrowserRouter([
 	{
@@ -22,11 +22,7 @@ const router = createBrowserRouter([
 			},
 			{
 				path: 'saved',
-				element: (
-					<ProtectedRoute>
-						<Saved />
-					</ProtectedRoute>
-				),
+				element: <Navigate to='/account/saved' replace />,
 			},
 			{
 				path: 'plan',
@@ -41,6 +37,14 @@ const router = createBrowserRouter([
 				element: (
 					<ProtectedRoute>
 						<Account />
+					</ProtectedRoute>
+				),
+			},
+			{
+				path: 'account/saved',
+				element: (
+					<ProtectedRoute>
+						<Saved />
 					</ProtectedRoute>
 				),
 			},
@@ -60,7 +64,7 @@ const router = createBrowserRouter([
 				path: 'onboarding',
 				element: (
 					<ProtectedRoute>
-						<Onboarding />
+						<OnboardingPage />
 					</ProtectedRoute>
 				),
 			},

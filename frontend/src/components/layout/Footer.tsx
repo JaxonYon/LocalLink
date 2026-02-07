@@ -39,7 +39,7 @@ const Footer = (): JSX.Element => {
 								</Link>
 							</li>
 							<li>
-								<Link to='/saved' className='hover:text-white transition-colors'>
+								<Link to='/account/saved' className='hover:text-white transition-colors'>
 									Saved Trips
 								</Link>
 							</li>

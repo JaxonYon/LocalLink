@@ -140,7 +140,7 @@ export const AuthResetPassword = (): JSX.Element => {
 
 						<Input label='Email' type='email' placeholder='you@example.com' value={email} onChange={(e) => setEmail(e.target.value)} required />
 
-						<Button type='submit' disabled={isLoading} className='w-full bg-orange-600 hover:bg-orange-700 text-white font-semibold'>
+						<Button type='submit' disabled={isLoading} fullWidth>
 							{isLoading ? 'Sending reset code...' : 'Send Reset Code'}
 						</Button>
 					</form>
@@ -159,20 +159,22 @@ export const AuthResetPassword = (): JSX.Element => {
 
 						<Input label='Reset Code' placeholder='Enter 6-digit code' value={code} onChange={(e) => setCode(e.target.value.toUpperCase())} maxLength={6} required />
 
-						<Button type='submit' disabled={isLoading} className='w-full bg-orange-600 hover:bg-orange-700 text-white font-semibold'>
+						<Button type='submit' disabled={isLoading} fullWidth>
 							{isLoading ? 'Verifying...' : 'Verify Code'}
 						</Button>
 
-						<button
+						<Button
 							type='button'
+							variant='link'
+							size='sm'
+							fullWidth
 							onClick={() => {
 								setStage('email');
 								setError('');
 								setCode('');
-							}}
-							className='w-full text-orange-600 hover:text-orange-700 font-semibold text-sm'>
+							}}>
 							Back to email
-						</button>
+						</Button>
 					</form>
 				</>
 			)}
@@ -191,7 +193,7 @@ export const AuthResetPassword = (): JSX.Element => {
 
 						<Input label='Confirm Password' type='password' placeholder='Re-enter your password' value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} required />
 
-						<Button type='submit' disabled={isLoading} className='w-full bg-orange-600 hover:bg-orange-700 text-white font-semibold'>
+						<Button type='submit' disabled={isLoading} fullWidth>
 							{isLoading ? 'Resetting password...' : 'Reset Password'}
 						</Button>
 					</form>
@@ -209,7 +211,7 @@ export const AuthResetPassword = (): JSX.Element => {
 						<h2 className='text-2xl font-bold text-gray-900'>Password reset successful!</h2>
 						<p className='text-sm text-gray-600 mt-2'>You're now signed in and ready to explore</p>
 					</div>
-					<Button onClick={() => navigate('/')} className='w-full bg-orange-600 hover:bg-orange-700 text-white font-semibold mt-4'>
+					<Button onClick={() => navigate('/')} fullWidth className='mt-4'>
 						Go to Home
 					</Button>
 					<p className='text-xs text-gray-500 mt-4'>Redirecting in a few seconds...</p>

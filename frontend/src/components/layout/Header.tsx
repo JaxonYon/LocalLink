@@ -12,20 +12,27 @@ type NavLinkType = {
 const navItems: NavLinkType[] = [
 	{ label: 'Discover', to: '/discover' },
 	{ label: 'Plan Trip', to: '/plan' },
-	{ label: 'Saved', to: '/saved' },
+	{ label: 'Saved', to: '/account/saved' },
 ];
 
 const Header = (): JSX.Element => {
 	const { user } = useUser();
 	const { signOut } = useClerk();
 	const navigate = useNavigate();
-	const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 	const dropdownRef = useRef<HTMLDivElement>(null);
 
-	// Close dropdown when clicking outside
+	const [isDropdownOpen, setIsDropdownOpen] = useState<boolean>(false);
+	const [isScrolled, setIsScrolled] = useState<boolean>(false);
+
+	const handleSignOut = async () => {
+		await signOut();
+		navigate('/');
+		setIsDropdownOpen(false);
+	};
+
 	useEffect(() => {
-		const handleClickOutside = (event: MouseEvent) => {
-			if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+		const handleClickOutside = (e: MouseEvent) => {
+			if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
 				setIsDropdownOpen(false);
 			}
 		};
@@ -34,24 +41,28 @@ const Header = (): JSX.Element => {
 		return () => document.removeEventListener('mousedown', handleClickOutside);
 	}, []);
 
-	const handleSignOut = async () => {
-		await signOut();
-		navigate('/');
-		setIsDropdownOpen(false);
-	};
+	useEffect(() => {
+		const handleScroll = () => {
+			setIsScrolled(window.scrollY > 80);
+		};
+
+		handleScroll();
+		window.addEventListener('scroll', handleScroll, { passive: true });
+		return () => window.removeEventListener('scroll', handleScroll);
+	}, []);
 
 	return (
-		<div className='fixed z-50 w-full flex items-center justify-center bg-orange-600'>
+		<div className={cn('fixed z-50 w-full flex items-center justify-center transition-colors duration-300', isScrolled ? 'bg-orange-600/95 shadow-lg backdrop-blur' : 'bg-transparent')}>
 			<header className='h-20 w-full max-w-6xl'>
 				<div className='h-full w-full mx-auto px-6 py-4 flex items-center justify-start gap-8'>
-					<Link to='/' className='flex items-center gap-2 font-bold text-2xl tracking-tight text-white hover:text-yellow-300 transition-colors duration-300'>
+					<Link to='/' className='flex items-center gap-2 font-bold text-2xl tracking-tight text-white transition-all duration-300 ease-in-out'>
 						<span>🌍</span>
 						Local Link
 					</Link>
 
 					<nav className='hidden md:flex items-center gap-8 flex-1 ml-8'>
 						{navItems.map((item: NavLinkType, idx: number) => (
-							<NavLink key={idx} to={item.to} end={item.to === '/'} className={({ isActive }) => cn('select-none cursor-pointer font-semibold text-white hover:text-yellow-300 transition-all duration-300', isActive ? 'text-yellow-300' : '')}>
+							<NavLink key={idx} to={item.to} end={item.to === '/'} className={({ isActive }) => cn('select-none cursor-pointer font-semibold text-white hover:text-yellow-300 transition-all duration-300 ease-in-out', isActive ? 'text-yellow-300' : '')}>
 								{item.label}
 							</NavLink>
 						))}
@@ -92,7 +103,7 @@ const Header = (): JSX.Element => {
 												<span className='font-medium'>My Account</span>
 											</Link>
 
-											<Link to='/saved' onClick={() => setIsDropdownOpen(false)} className='flex items-center gap-3 px-4 py-2 hover:bg-orange-50 text-gray-700 hover:text-orange-600 transition-colors'>
+											<Link to='/account/saved' onClick={() => setIsDropdownOpen(false)} className='flex items-center gap-3 px-4 py-2 hover:bg-orange-50 text-gray-700 hover:text-orange-600 transition-colors'>
 												<svg className='w-5 h-5' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
 													<path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z' />
 												</svg>

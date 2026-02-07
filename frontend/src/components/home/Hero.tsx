@@ -1,3 +1,4 @@
+import { Button } from '@/components/ui';
 import { listingCategories } from '@/data';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -52,9 +53,9 @@ const Hero = (): JSX.Element => {
 
 						<form onSubmit={handleSearch} className='flex w-full max-w-md items-center overflow-hidden rounded-xl border border-gray-200'>
 							<input type='text' placeholder='Search destinations...' value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className='w-full px-4 py-3 font-normal text-sm text-gray-700 outline-none' />
-							<button type='submit' className='flex h-full items-center justify-center bg-yellow-400 px-5 hover:bg-yellow-500 transition-colors'>
+							<Button type='submit' variant='accent' size='md' className='h-full rounded-none rounded-r-xl px-5'>
 								➜
-							</button>
+							</Button>
 						</form>
 
 						<div className='flex gap-10 pt-6'>
