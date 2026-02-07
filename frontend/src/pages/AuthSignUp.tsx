@@ -17,7 +17,9 @@ export const AuthSignUp = (): JSX.Element => {
 	const [step, setStep] = useState<'form' | 'verify'>('form');
 	const [verificationCode, setVerificationCode] = useState('');
 	const [error, setError] = useState('');
+	const [errorDetails, setErrorDetails] = useState<string | null>(null);
 	const [isLoading, setIsLoading] = useState(false);
+	const isDev = import.meta.env.DEV;
 
 	// Redirect if already signed in
 	useEffect(() => {
@@ -36,6 +38,7 @@ export const AuthSignUp = (): JSX.Element => {
 		if (!isLoaded || !signUp) return;
 
 		setError('');
+		setErrorDetails(null);
 
 		// Validation
 		if (formData.password !== formData.confirmPassword) {
@@ -68,8 +71,21 @@ export const AuthSignUp = (): JSX.Element => {
 			setStep('verify');
 		} catch (err: any) {
 			console.error('Sign up error:', err);
-			const errorMessage = err.errors?.[0]?.longMessage || err.errors?.[0]?.message || err.message || 'Failed to create account';
+			const errorMessage =
+				err?.errors
+					?.map((e: { code?: string; longMessage?: string; message?: string }) => `${e.code ? `${e.code}: ` : ''}${e.longMessage ?? e.message ?? ''}`)
+					?.filter(Boolean)
+					.join(' ') ||
+				err?.message ||
+				'Failed to create account';
 			setError(errorMessage);
+			if (isDev) {
+				try {
+					setErrorDetails(JSON.stringify(err, Object.getOwnPropertyNames(err), 2));
+				} catch {
+					setErrorDetails(String(err));
+				}
+			}
 		} finally {
 			setIsLoading(false);
 		}
@@ -80,6 +96,7 @@ export const AuthSignUp = (): JSX.Element => {
 		if (!signUp || !isLoaded) return;
 
 		setError('');
+		setErrorDetails(null);
 		setIsLoading(true);
 		try {
 			const result = await signUp.attemptEmailAddressVerification({
@@ -93,8 +110,21 @@ export const AuthSignUp = (): JSX.Element => {
 			setError('Verification pending. Please check your email and try again.');
 		} catch (err: any) {
 			console.error('Verification error:', err);
-			const errorMessage = err.errors?.[0]?.longMessage || err.errors?.[0]?.message || err.message || 'Failed to verify email';
+			const errorMessage =
+				err?.errors
+					?.map((e: { code?: string; longMessage?: string; message?: string }) => `${e.code ? `${e.code}: ` : ''}${e.longMessage ?? e.message ?? ''}`)
+					?.filter(Boolean)
+					.join(' ') ||
+				err?.message ||
+				'Failed to verify email';
 			setError(errorMessage);
+			if (isDev) {
+				try {
+					setErrorDetails(JSON.stringify(err, Object.getOwnPropertyNames(err), 2));
+				} catch {
+					setErrorDetails(String(err));
+				}
+			}
 		} finally {
 			setIsLoading(false);
 		}
@@ -109,7 +139,12 @@ export const AuthSignUp = (): JSX.Element => {
 
 			{step === 'form' ? (
 				<form onSubmit={handleSignUp} className='space-y-4'>
-					{error && <div className='rounded-lg bg-red-50 p-4 text-sm text-red-700'>{error}</div>}
+					{error && (
+						<div className='rounded-lg bg-red-50 p-4 text-sm text-red-700'>
+							<p>{error}</p>
+							{isDev && errorDetails ? <pre className='mt-3 max-h-48 overflow-auto rounded-md bg-white/70 p-3 text-xs text-red-700'>{errorDetails}</pre> : null}
+						</div>
+					)}
 
 					<div className='grid grid-cols-2 gap-3'>
 						<Input label='First name' placeholder='John' name='firstName' value={formData.firstName} onChange={handleChange} required />
@@ -125,10 +160,16 @@ export const AuthSignUp = (): JSX.Element => {
 					<Button type='submit' disabled={isLoading} fullWidth>
 						{isLoading ? 'Creating account...' : 'Create Account'}
 					</Button>
+					<div id='clerk-captcha' className='min-h-[72px]' />
 				</form>
 			) : (
 				<form onSubmit={handleVerify} className='space-y-4'>
-					{error && <div className='rounded-lg bg-red-50 p-4 text-sm text-red-700'>{error}</div>}
+					{error && (
+						<div className='rounded-lg bg-red-50 p-4 text-sm text-red-700'>
+							<p>{error}</p>
+							{isDev && errorDetails ? <pre className='mt-3 max-h-48 overflow-auto rounded-md bg-white/70 p-3 text-xs text-red-700'>{errorDetails}</pre> : null}
+						</div>
+					)}
 					<Input label='Verification code' placeholder='Enter the code from your email' value={verificationCode} onChange={(event) => setVerificationCode(event.target.value)} required />
 					<Button type='submit' disabled={isLoading} fullWidth>
 						{isLoading ? 'Verifying...' : 'Verify email'}

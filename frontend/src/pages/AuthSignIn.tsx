@@ -10,7 +10,9 @@ export const AuthSignIn = (): JSX.Element => {
 	const [email, setEmail] = useState('');
 	const [password, setPassword] = useState('');
 	const [error, setError] = useState('');
+	const [errorDetails, setErrorDetails] = useState<string | null>(null);
 	const [isLoading, setIsLoading] = useState(false);
+	const isDev = import.meta.env.DEV;
 
 	// Redirect if already signed in
 	useEffect(() => {
@@ -24,6 +26,7 @@ export const AuthSignIn = (): JSX.Element => {
 		if (!isLoaded || !signIn) return;
 
 		setError('');
+		setErrorDetails(null);
 		setIsLoading(true);
 
 		try {
@@ -37,8 +40,21 @@ export const AuthSignIn = (): JSX.Element => {
 			}
 		} catch (err: any) {
 			console.error('Sign in error:', err);
-			const errorMessage = err.errors?.[0]?.longMessage || err.errors?.[0]?.message || err.message || 'Invalid email or password';
+			const errorMessage =
+				err?.errors
+					?.map((e: { code?: string; longMessage?: string; message?: string }) => `${e.code ? `${e.code}: ` : ''}${e.longMessage ?? e.message ?? ''}`)
+					?.filter(Boolean)
+					.join(' ') ||
+				err?.message ||
+				'Invalid email or password';
 			setError(errorMessage);
+			if (isDev) {
+				try {
+					setErrorDetails(JSON.stringify(err, Object.getOwnPropertyNames(err), 2));
+				} catch {
+					setErrorDetails(String(err));
+				}
+			}
 		} finally {
 			setIsLoading(false);
 		}
@@ -52,7 +68,12 @@ export const AuthSignIn = (): JSX.Element => {
 			</div>
 
 			<form onSubmit={handleSignIn} className='space-y-4'>
-				{error && <div className='rounded-lg bg-red-50 p-4 text-sm text-red-700'>{error}</div>}
+				{error && (
+					<div className='rounded-lg bg-red-50 p-4 text-sm text-red-700'>
+						<p>{error}</p>
+						{isDev && errorDetails ? <pre className='mt-3 max-h-48 overflow-auto rounded-md bg-white/70 p-3 text-xs text-red-700'>{errorDetails}</pre> : null}
+					</div>
+				)}
 
 				<Input label='Email' type='email' placeholder='you@example.com' value={email} onChange={(e) => setEmail(e.target.value)} required />
 
