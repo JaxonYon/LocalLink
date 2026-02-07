@@ -5,7 +5,7 @@ import { useNavigate } from 'react-router-dom';
 
 export const AuthSignUp = (): JSX.Element => {
 	const { isSignedIn } = useAuth();
-	const { signUp, isLoaded } = useSignUp();
+	const { signUp, isLoaded, setActive } = useSignUp();
 	const navigate = useNavigate();
 	const [formData, setFormData] = useState({
 		firstName: '',
@@ -14,6 +14,8 @@ export const AuthSignUp = (): JSX.Element => {
 		password: '',
 		confirmPassword: '',
 	});
+	const [step, setStep] = useState<'form' | 'verify'>('form');
+	const [verificationCode, setVerificationCode] = useState('');
 	const [error, setError] = useState('');
 	const [isLoading, setIsLoading] = useState(false);
 
@@ -56,11 +58,42 @@ export const AuthSignUp = (): JSX.Element => {
 				password: formData.password,
 			});
 
-			// Email verification would happen here
-			navigate('/onboarding');
+			if (signUp.status === 'complete') {
+				await setActive({ session: signUp.createdSessionId });
+				navigate('/onboarding');
+				return;
+			}
+
+			await signUp.prepareEmailAddressVerification({ strategy: 'email_code' });
+			setStep('verify');
 		} catch (err: any) {
 			console.error('Sign up error:', err);
 			const errorMessage = err.errors?.[0]?.longMessage || err.errors?.[0]?.message || err.message || 'Failed to create account';
+			setError(errorMessage);
+		} finally {
+			setIsLoading(false);
+		}
+	};
+
+	const handleVerify = async (e: React.FormEvent) => {
+		e.preventDefault();
+		if (!signUp || !isLoaded) return;
+
+		setError('');
+		setIsLoading(true);
+		try {
+			const result = await signUp.attemptEmailAddressVerification({
+				code: verificationCode,
+			});
+			if (result.status === 'complete') {
+				await setActive({ session: result.createdSessionId });
+				navigate('/onboarding');
+				return;
+			}
+			setError('Verification pending. Please check your email and try again.');
+		} catch (err: any) {
+			console.error('Verification error:', err);
+			const errorMessage = err.errors?.[0]?.longMessage || err.errors?.[0]?.message || err.message || 'Failed to verify email';
 			setError(errorMessage);
 		} finally {
 			setIsLoading(false);
@@ -74,24 +107,46 @@ export const AuthSignUp = (): JSX.Element => {
 				<p className='text-sm text-gray-600 mt-1'>Join millions exploring the world's best experiences</p>
 			</div>
 
-			<form onSubmit={handleSignUp} className='space-y-4'>
-				{error && <div className='rounded-lg bg-red-50 p-4 text-sm text-red-700'>{error}</div>}
+			{step === 'form' ? (
+				<form onSubmit={handleSignUp} className='space-y-4'>
+					{error && <div className='rounded-lg bg-red-50 p-4 text-sm text-red-700'>{error}</div>}
 
-				<div className='grid grid-cols-2 gap-3'>
-					<Input label='First name' placeholder='John' name='firstName' value={formData.firstName} onChange={handleChange} required />
-					<Input label='Last name' placeholder='Doe' name='lastName' value={formData.lastName} onChange={handleChange} required />
-				</div>
+					<div className='grid grid-cols-2 gap-3'>
+						<Input label='First name' placeholder='John' name='firstName' value={formData.firstName} onChange={handleChange} required />
+						<Input label='Last name' placeholder='Doe' name='lastName' value={formData.lastName} onChange={handleChange} required />
+					</div>
 
-				<Input label='Email' type='email' placeholder='you@example.com' name='email' value={formData.email} onChange={handleChange} required />
+					<Input label='Email' type='email' placeholder='you@example.com' name='email' value={formData.email} onChange={handleChange} required />
 
-				<Input label='Password' type='password' placeholder='At least 8 characters' name='password' value={formData.password} onChange={handleChange} required />
+					<Input label='Password' type='password' placeholder='At least 8 characters' name='password' value={formData.password} onChange={handleChange} required />
 
-				<Input label='Confirm password' type='password' placeholder='Re-enter your password' name='confirmPassword' value={formData.confirmPassword} onChange={handleChange} required />
+					<Input label='Confirm password' type='password' placeholder='Re-enter your password' name='confirmPassword' value={formData.confirmPassword} onChange={handleChange} required />
 
-				<Button type='submit' disabled={isLoading} fullWidth>
-					{isLoading ? 'Creating account...' : 'Create Account'}
-				</Button>
-			</form>
+					<Button type='submit' disabled={isLoading} fullWidth>
+						{isLoading ? 'Creating account...' : 'Create Account'}
+					</Button>
+				</form>
+			) : (
+				<form onSubmit={handleVerify} className='space-y-4'>
+					{error && <div className='rounded-lg bg-red-50 p-4 text-sm text-red-700'>{error}</div>}
+					<Input label='Verification code' placeholder='Enter the code from your email' value={verificationCode} onChange={(event) => setVerificationCode(event.target.value)} required />
+					<Button type='submit' disabled={isLoading} fullWidth>
+						{isLoading ? 'Verifying...' : 'Verify email'}
+					</Button>
+					<Button
+						type='button'
+						variant='link'
+						size='sm'
+						fullWidth
+						onClick={() => {
+							setStep('form');
+							setError('');
+							setVerificationCode('');
+						}}>
+						Back to sign up
+					</Button>
+				</form>
+			)}
 
 			<div className='text-center text-sm text-gray-600'>
 				Already have an account?{' '}
