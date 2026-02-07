@@ -1,4 +1,4 @@
-const API_URL = process.env.NODE_ENV === 'production' ? 'https://locallink.up.railway.app' : 'http://localhost:8000';
+const API_URL = (import.meta.env.VITE_API_URL as string | undefined) ?? 'http://localhost:8000';
 
 export const api = {
 	signup: (email: string, password: string) =>
@@ -16,7 +16,7 @@ export const api = {
 		}).then((r) => r.json()),
 
 	generateItinerary: (payload: any) =>
-		fetch('http://localhost:8000/generate-itinerary', {
+		fetch(`${API_URL}/generate-itinerary`, {
 			method: 'POST',
 			headers: { 'Content-Type': 'application/json' },
 			body: JSON.stringify(payload),
