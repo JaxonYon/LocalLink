@@ -1,4 +1,4 @@
-const API_URL = 'http://localhost:8000';
+const API_URL = process.env.NODE_ENV === 'production' ? 'https://locallink.up.railway.app' : 'http://localhost:8000';
 
 export const api = {
 	signup: (email: string, password: string) =>

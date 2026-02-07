@@ -1,19 +1,13 @@
 import { FeaturedSlider, PopularPlacesSlider, TopRatedGuidesSlider } from '@/components/home';
 import { Button } from '@/components/ui';
-import { listingCategories } from '@/data';
-
-const categoryOptions = listingCategories.map((category) => ({
-	value: category.id,
-	label: category.label,
-}));
 
 const Home = (): JSX.Element => {
 	return (
 		<div className='space-y-10'>
 			<section className='h-screen w-full flex items-center justify-center bg-orange-600 relative overflow-hidden'>
 				<div className='absolute inset-0'>
-					<div className='absolute -top-24 right-8 h-64 w-64 rounded-full bg-white/10' />
-					<div className='absolute -bottom-32 left-10 h-72 w-72 rounded-full bg-white/10' />
+					<div className='floating-bubble absolute -top-24 right-8 h-64 w-64 rounded-full bg-white/10' />
+					<div className='floating-bubble floating-bubble-delay absolute -bottom-32 left-10 h-72 w-72 rounded-full bg-white/10' />
 				</div>
 				<div className='w-full max-w-6xl mx-auto px-6 py-20 flex flex-col items-center justify-center gap-8 relative z-10'>
 					<div className='flex flex-col items-center justify-center gap-4'>

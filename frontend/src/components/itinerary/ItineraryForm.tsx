@@ -40,12 +40,6 @@ export const ItineraryForm = ({ onGenerate, isSubmitting = false }: ItineraryFor
 		budget: 'medium',
 		mustSees: '',
 	});
-	const [errors, setErrors] = useState<{ destination?: string; dates?: string }>({});
-
-	const updateField = <K extends keyof ItineraryInput>(key: K, value: ItineraryInput[K]): void => {
-		setFormData((prev) => ({ ...prev, [key]: value }));
-	};
-
 	const toggleInterest = (value: string): void => {
 		setFormData((prev) => {
 			const next = prev.interests.includes(value) ? prev.interests.filter((item) => item !== value) : [...prev.interests, value];
@@ -54,10 +48,10 @@ export const ItineraryForm = ({ onGenerate, isSubmitting = false }: ItineraryFor
 	};
 
 	const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-		const { name, value, type, checked } = e.target;
+		const { name, value } = e.currentTarget;
 		setFormData((prev) => ({
 			...prev,
-			[name]: type === 'checkbox' ? checked : value,
+			[name]: value,
 		}));
 	};
 
@@ -72,7 +66,13 @@ export const ItineraryForm = ({ onGenerate, isSubmitting = false }: ItineraryFor
 			<Input name='destination' value={formData.destination} onChange={handleChange} placeholder='Destination' required />
 			<Input name='startDate' type='date' value={formData.startDate} onChange={handleChange} required />
 			<Input name='endDate' type='date' value={formData.endDate} onChange={handleChange} required />
-			<Select name='interests' options={interestOptions} onChange={handleChange} isMulti />
+			<div className='flex flex-wrap gap-2'>
+				{interestOptions.map((option) => (
+					<Button key={option.value} type='button' variant='outline' size='sm' className={formData.interests.includes(option.value) ? 'border-orange-300 bg-orange-50 text-orange-700' : 'border-border text-text-subtle'} onClick={() => toggleInterest(option.value)}>
+						{option.label}
+					</Button>
+				))}
+			</div>
 			<Select name='pace' options={paceOptions} onChange={handleChange} />
 			<Select name='budget' options={budgetOptions} onChange={handleChange} />
 			<Button type='submit' disabled={isSubmitting}>

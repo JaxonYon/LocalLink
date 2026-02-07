@@ -1,12 +1,6 @@
 import { Button } from '@/components/ui';
-import { listingCategories } from '@/data';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-
-const categoryOptions = listingCategories.map((category) => ({
-	value: category.id,
-	label: category.label,
-}));
 
 const Hero = (): JSX.Element => {
 	const navigate = useNavigate();

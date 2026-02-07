@@ -222,10 +222,10 @@ export const Itinerary = (): JSX.Element => {
 	};
 
 	const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-		const { name, value, type, checked } = e.target;
+		const { name, value } = e.currentTarget;
 		setFormData((prev) => ({
 			...prev,
-			[name]: type === 'checkbox' ? checked : value,
+			[name]: value,
 		}));
 	};
 
