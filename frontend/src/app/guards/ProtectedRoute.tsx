@@ -15,7 +15,7 @@ export const ProtectedRoute = ({ children }: ProtectedRouteProps): JSX.Element =
 	if (!isLoaded) {
 		return (
 			<div className='fixed inset-0 flex items-center justify-center bg-gradient-to-br from-orange-dark via-orange-600 to-orange-700 z-50'>
-				<Spinner label='Checking session' />
+				<Spinner />
 			</div>
 		);
 	}

@@ -7,3 +7,4 @@ bcrypt
 google-genai
 psycopg2-binary
 redis
+sentry-sdk

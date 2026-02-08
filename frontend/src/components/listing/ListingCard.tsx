@@ -20,29 +20,27 @@ export const ListingCard = ({ listing, layout = 'grid', action }: ListingCardPro
 	const isCompact = layout === 'compact';
 
 	return (
-		<Card className={cn('flex h-full flex-col overflow-hidden border-0 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 bg-white', isCompact ? 'min-w-[280px] max-w-[300px] shrink-0 rounded-2xl' : 'w-full rounded-xl')}>
-			<div className={cn('flex items-center justify-center bg-gradient-to-br from-orange-500 to-orange-600 text-xs text-white font-semibold relative overflow-hidden group', isCompact ? 'h-40' : 'h-56')}>
-				<div className='absolute inset-0 bg-white opacity-0 group-hover:opacity-10 transition-opacity duration-300'></div>
-				<span className='relative'>📸 Photo coming soon</span>
+		<Card className={cn('flex h-full flex-col overflow-hidden transition-all duration-200 ease-in-out hover:-translate-y-0.5 hover:shadow-md', isCompact ? 'min-w-[280px] max-w-[320px] shrink-0' : 'w-full')}>
+			<div className={cn('flex items-center justify-center border-b border-border bg-surface-muted text-xs font-medium text-text-subtle', isCompact ? 'h-40' : 'h-56')}>
+				<span>Photo coming soon</span>
 			</div>
-			<div className='flex flex-1 flex-col gap-3 p-5'>
+			<div className='flex flex-1 flex-col gap-3 p-4'>
 				<div className='flex items-center justify-between'>
-					<Badge variant='muted' className='bg-orange-100 text-orange-700 font-semibold'>
-						{getCategoryLabel(listing.categoryId)}
-					</Badge>
-					<span className='text-xs font-medium text-orange-600 bg-orange-50 px-2 py-1 rounded-full'>{listing.durationHours}h</span>
+					<Badge>{getCategoryLabel(listing.categoryId)}</Badge>
+					<Badge variant='outline'>{listing.durationHours}h</Badge>
 				</div>
 				<div className='space-y-1'>
-					<h3 className='text-base font-bold text-gray-900'>{listing.title}</h3>
-					<p className='text-sm text-gray-600'>{listing.location}</p>
+					<h3 className='text-base font-semibold text-text'>{listing.title}</h3>
+					<p className='text-sm text-text-subtle'>{listing.location}</p>
 				</div>
 				<div className='flex items-center justify-between text-sm mt-auto'>
-					<span className='font-bold text-lg text-orange-600'>${listing.pricePerPerson}</span>
-					<span className='text-gray-700 font-semibold'>
-						⭐ {listing.rating.toFixed(1)} <span className='text-gray-500 font-normal'>({listing.reviewCount})</span>
+					<span className='text-base font-semibold text-text'>${listing.pricePerPerson}</span>
+					<span className='text-text-subtle'>
+						<span className='font-semibold text-text'>⭐ {listing.rating.toFixed(1)}</span>
+						<span> ({listing.reviewCount})</span>
 					</span>
 				</div>
-				<div className='mt-auto'>
+				<div className='mt-2'>
 					{action ?? (
 						<Button asChild variant='outline' size='sm'>
 							<Link to={`/listing/${listing.id}`}>View details</Link>
